@@ -7,9 +7,10 @@ import QrScanner from './Camera';
 import axios from 'axios';
 import * as Location from 'expo-location';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Maps from './Maps';
 
 const Stack = createStackNavigator();
-const API_KEY = 'afd33f262a5c4463dd543b6978ad0711'; // Reemplaza con tu clave de OpenWeatherMap
+const API_KEY = 'afd33f262a5c4463dd543b6978ad0711'; 
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="RegisterAppointment" component={RegisterAppointment} />
         <Stack.Screen name="QrScanner" component={QrScanner} />
+        <Stack.Screen name="Maps" component={Maps} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -29,6 +31,7 @@ type RootStackParamList = {
   Home: undefined;
   RegisterAppointment: undefined;
   QrScanner: undefined;
+  Maps: undefined;
 };
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
@@ -111,6 +114,10 @@ function HomeScreen({ navigation }: { navigation: HomeScreenNavigationProp }) {
           title="Escanear QR"
           onPress={() => navigation.navigate('QrScanner')}
         />
+        <Button
+          title="Ver Mapa"
+          onPress={() => navigation.navigate('Maps')}
+          />
       </View>
     </View>
   );
