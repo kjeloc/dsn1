@@ -1,39 +1,17 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/useColorScheme';
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+// app/_layout.tsx
+import { Stack } from "expo-router";
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
-  }
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <Stack>
+      <Stack.Screen name="index" options={{ title: "Login" }} />
+      <Stack.Screen name="menuAdmin" options={{ title: "Admin" }} />
+      <Stack.Screen name="menuDentist" options={{ title: "Dentista" }} />
+      <Stack.Screen name="menuPatient" options={{ title: "Paciente" }} />
+      <Stack.Screen name="addAppointment" options={{ title: "AgregarCita" }} />
+      <Stack.Screen name="ViewAppointmentDentist" options={{ title: "Detalles de la Cita" }} />
+      <Stack.Screen name="ViewAppointmentPatient" options={{ title: "Detalles de la Cita" }} />
+      <Stack.Screen name="QRScannerScreen" options={{ title: "Qr Scan" }} />
+    </Stack>
   );
 }
