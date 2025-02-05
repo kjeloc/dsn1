@@ -8,6 +8,7 @@ import axios from 'axios';
 import * as Location from 'expo-location';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Maps from './Maps';
+import DentalTips from './DentalTips';
 
 const Stack = createStackNavigator();
 const API_KEY = 'afd33f262a5c4463dd543b6978ad0711'; 
@@ -20,6 +21,7 @@ export default function App() {
         <Stack.Screen name="RegisterAppointment" component={RegisterAppointment} />
         <Stack.Screen name="QrScanner" component={QrScanner} />
         <Stack.Screen name="Maps" component={Maps} />
+        <Stack.Screen name="DentalTips" component={DentalTips} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -32,6 +34,7 @@ type RootStackParamList = {
   RegisterAppointment: undefined;
   QrScanner: undefined;
   Maps: undefined;
+  DentalTips: undefined;
 };
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
@@ -117,6 +120,10 @@ function HomeScreen({ navigation }: { navigation: HomeScreenNavigationProp }) {
         <Button
           title="Ver Mapa"
           onPress={() => navigation.navigate('Maps')}
+          />
+           <Button
+          title="Ver Consejos Odontológicos"
+          onPress={() => navigation.navigate('DentalTips')}
           />
       </View>
     </View>
