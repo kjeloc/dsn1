@@ -180,6 +180,16 @@ const MenuPatient: React.FC = () => {
           <Text style={styles.error}>No hay datos disponibles</Text>
         )}
       </View>
+       <TouchableOpacity
+                  style={styles.dentalButton}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/DentalTips",
+                    })
+                  }
+                >
+                  <Text style={styles.dentalText}>Tips Dentales</Text>
+                </TouchableOpacity>
 
       <Text style={styles.subtitle}>Próximas Citas</Text>
       <FlatList
@@ -301,6 +311,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  dentalButton: {
+    backgroundColor: "#007BFF",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  dentalText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 
