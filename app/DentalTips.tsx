@@ -20,7 +20,7 @@ const DentalCareTips = () => {
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       // Define el prompt para obtener consejos odontológicos
-      const prompt = `Dame consejos detallados y prácticos sobre cuidados odontológicos, específicamente sobre: ${topic}`;
+      const prompt = `Dame consejos prácticos y resumidos sobre cuidados odontológicos relacionados con: ${topic}, en menos de 200 palabras.`;
 
       // Genera el contenido con el modelo
       const result = await model.generateContent(prompt);
