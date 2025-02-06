@@ -1,3 +1,4 @@
+import {GOOGLE_GENERATIVE_AI_KEY} from '@env';// Importa la clave de la API desde .env
 import React, { useState } from "react";
 import { ScrollView, View, Text, TextInput, Button } from "react-native";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -8,7 +9,7 @@ const DentalCareTips = () => {
   const [loading, setLoading] = useState(false); // Estado de carga
 
   // Inicializa el cliente de la API con tu clave
-  const genAI = new GoogleGenerativeAI("AIzaSyDjU5vIJQupQEATG1solQN0oyCLB6N-cXU");
+  const genAI = new GoogleGenerativeAI(GOOGLE_GENERATIVE_AI_KEY);
 
   const fetchDentalTips = async () => {
     if (!topic) return;

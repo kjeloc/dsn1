@@ -1,3 +1,4 @@
+import { API_WEATHER_KEY } from "@env";
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator,Alert} from "react-native";
 import { db } from "../config/firebaseConfig";
@@ -7,7 +8,7 @@ import axios from "axios";
 import * as Location from "expo-location";
 import dayjs from "dayjs";
 
-const API_KEY = "afd33f262a5c4463dd543b6978ad0711";
+const API_KEY = API_WEATHER_KEY;
 
 interface UserData {
   name: string;
