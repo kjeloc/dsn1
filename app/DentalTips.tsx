@@ -1,4 +1,4 @@
-import {GOOGLE_GENERATIVE_AI_KEY} from '@env';// Importa la clave de la API desde .env
+import { GOOGLE_GENERATIVE_AI_KEY } from '@env'; // Importa la clave de la API desde .env
 import React, { useState } from "react";
 import { ScrollView, View, Text, TextInput, Button } from "react-native";
 import { GoogleGenerativeAI } from "@google/generative-ai";
