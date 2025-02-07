@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { ScrollView, View, Text, TextInput, Button } from "react-native";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
+import { API_CLIMA } from "../config/apiConfig";
 const DentalCareTips = () => {
   const [topic, setTopic] = useState(""); // Tema ingresado por el usuario
   const [response, setResponse] = useState(""); // Respuesta de la API
   const [loading, setLoading] = useState(false); // Estado de carga
 
   // Inicializa el cliente de la API con tu clave
-  const genAI = new GoogleGenerativeAI("AIzaSyDjU5vIJQupQEATG1solQN0oyCLB6N-cXU");
+  const genAI = new GoogleGenerativeAI(API_CLIMA);
 
   const fetchDentalTips = async () => {
     if (!topic) return;

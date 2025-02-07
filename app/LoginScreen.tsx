@@ -65,6 +65,7 @@ const LoginScreen = () => {
           secureTextEntry
         />
         <Button title="Iniciar Sesión" onPress={handleLogin} />
+        <Button title="Registrar nuevo Usuario" onPress={() =>router.push({pathname: "/registerUser",})} />
       </View>
     );
   };

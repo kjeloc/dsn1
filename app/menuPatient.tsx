@@ -6,8 +6,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import axios from "axios";
 import * as Location from "expo-location";
 import dayjs from "dayjs";
-
-const API_KEY = "afd33f262a5c4463dd543b6978ad0711";
+import { API_CLIMA } from "../config/apiConfig";
+const API_KEY = API_CLIMA;
 
 interface UserData {
   name: string;

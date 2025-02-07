@@ -1,0 +1,4 @@
+const API_AI = "AIzaSyDjU5vIJQupQEATG1solQN0oyCLB6N-cXU";
+const API_CLIMA = "afd33f262a5c4463dd543b6978ad0711";
+
+export { API_AI, API_CLIMA };
