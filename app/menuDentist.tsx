@@ -1,12 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  ActivityIndicator,
-  TouchableOpacity,
-} from "react-native";
+import {  View,  Text,  StyleSheet,  FlatList,  ActivityIndicator,  TouchableOpacity,} from "react-native";
 import { db } from "../config/firebaseConfig";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
@@ -179,6 +172,12 @@ const MenuDentist: React.FC = () => {
         onPress={() => router.push(`/addAppointment?userId=${userId}`)}
       >
         <Text style={styles.addButtonText}>Agregar Cita</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => router.push(`/ProfileDentist?userId=${userId}`)}
+      >
+        <Text style={styles.addButtonText}>Perfil</Text>
       </TouchableOpacity>
           <TouchableOpacity onPress={toggleCalendario}>
             <Text style={styles.subtitle}>

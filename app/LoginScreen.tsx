@@ -1,10 +1,22 @@
-import React, { useState } from "react";
-import { View, TextInput, Button, StyleSheet, Text, Alert } from "react-native";
+// app/LoginScreen.tsx
+import { useState, useEffect, useRef } from 'react';
+import {  View,  TextInput,  Button,  StyleSheet,  Text,  Alert, Platform} from "react-native";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { collection, getDocs, query, where, doc, updateDoc } from "firebase/firestore";
+import {  collection,  getDocs,  query,  where,  doc,  updateDoc} from "firebase/firestore";
 import { auth, db } from "../config/firebaseConfig";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Location from "expo-location"; // Importar expo-location
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+import dayjs from "dayjs";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
@@ -20,18 +32,48 @@ const LoginScreen = () => {
         console.warn("Permiso de ubicación denegado");
         return null;
       }
-
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
-
       // Actualizar el documento del usuario en Firestore con la ubicación
       await updateDoc(doc(db, "userTest", userId), {
         AcPos: { latitude, longitude }, // Guardar como un objeto con latitud y longitud
       });
-
       console.log("Ubicación registrada:", { latitude, longitude });
     } catch (error) {
       console.error("Error al obtener la ubicación:", error);
+    }
+  };
+
+  // Función para programar una notificación local
+  const scheduleNotification = async (appointmentCount: number) => {
+    const notificationContent = {
+      title: "Recordatorio de citas",
+      body: `Hoy tienes ${appointmentCount} cita(s) programada(s).`,
+    };
+  
+    await Notifications.scheduleNotificationAsync({
+      content: notificationContent,
+      trigger: null,
+    });
+  };
+
+  // Función para contar las citas del día actual
+  const countAppointmentsForToday = async (userId: string) => {
+    try {
+      const today = dayjs().format("YYYY-MM-DD"); // Fecha actual en formato YYYY-MM-DD
+      const appointmentsSnapshot = await getDocs(
+        collection(db, "userTest", userId, "appointments")
+      );
+
+      const todaysAppointments = appointmentsSnapshot.docs.filter((doc) => {
+        const appointment = doc.data();
+        return appointment.date === today;
+      });
+
+      return todaysAppointments.length;
+    } catch (error) {
+      console.error("Error al contar las citas:", error);
+      return 0;
     }
   };
 
@@ -41,15 +83,12 @@ const LoginScreen = () => {
       const usersRef = collection(db, "userTest");
       const q = query(usersRef, where("email", "==", email));
       const querySnapshot = await getDocs(q);
-
       if (querySnapshot.empty) {
         Alert.alert("Error", "Usuario no encontrado");
         return;
       }
-
       const userDoc = querySnapshot.docs[0];
       const userData = userDoc.data();
-
       if (userData.password !== password) {
         Alert.alert("Error", "Contraseña incorrecta");
         return;
@@ -57,6 +96,13 @@ const LoginScreen = () => {
 
       // Obtener la ubicación del usuario y actualizar el documento
       await getUserLocation(userDoc.id);
+
+      // Contar las citas del día actual
+      console.log("Es culpa del Login Screen");
+      const appointmentCount = await countAppointmentsForToday(userDoc.id);
+
+      // Programar la notificación
+      await scheduleNotification(appointmentCount);
 
       // Redirigir según el rol del usuario
       if (userData.rol === "Admin") {
@@ -82,13 +128,14 @@ const LoginScreen = () => {
         placeholder="Correo electrónico"
         value={email}
         onChangeText={setEmail}
+        autoCapitalize="none"
       />
       <TextInput
         style={styles.input}
         placeholder="Contraseña"
-        secureTextEntry
         value={password}
         onChangeText={setPassword}
+        secureTextEntry
       />
       <Button title="Iniciar Sesión" onPress={handleLogin} />
     </View>

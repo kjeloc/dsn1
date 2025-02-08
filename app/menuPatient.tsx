@@ -190,6 +190,12 @@ const MenuPatient: React.FC = () => {
                 >
                   <Text style={styles.dentalText}>Tips Dentales</Text>
                 </TouchableOpacity>
+       <TouchableOpacity
+               style={styles.addButton}
+               onPress={() => router.push(`/ProfilePatient?userId=${userId}`)}
+             >
+               <Text style={styles.addButtonText}>Perfil</Text>
+             </TouchableOpacity>         
 
       <Text style={styles.subtitle}>Próximas Citas</Text>
       <FlatList
@@ -320,6 +326,17 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   dentalText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },addButton: {
+    backgroundColor: "#007BFF",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  addButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
