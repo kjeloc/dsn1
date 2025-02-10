@@ -1,15 +1,13 @@
-// app/LoginScreen.tsx
-import { useState, useEffect, useRef } from 'react';
-import {  View,  TextInput,  Button,  StyleSheet,  Text,  Alert, Platform} from "react-native";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import {  collection,  getDocs,  query,  where,  doc,  updateDoc} from "firebase/firestore";
+import { useState, useEffect } from 'react';
+import { View, TextInput, Button, StyleSheet, Text, Alert, Platform } from "react-native";
+import { collection, getDocs, query, where, doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../config/firebaseConfig";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Location from "expo-location"; // Importar expo-location
 import * as Notifications from 'expo-notifications';
-import Constants from 'expo-constants';
 import dayjs from "dayjs";
 
+// Configurar el manejador de notificaciones
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -23,6 +21,21 @@ const LoginScreen = () => {
   const [password, setPassword] = useState("");
   const router = useRouter();
   const { userId } = useLocalSearchParams();
+
+  // Solicitar permisos de notificaciones al cargar el componente
+  useEffect(() => {
+    const requestNotificationPermissions = async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== "granted") {
+        console.warn("Permiso de notificaciones denegado");
+        Alert.alert(
+          "Notificaciones Desactivadas",
+          "No podrás recibir recordatorios de citas si no otorgas permisos."
+        );
+      }
+    };
+    requestNotificationPermissions();
+  }, []);
 
   // Función para obtener la ubicación actual del usuario
   const getUserLocation = async (userId: string) => {
@@ -50,7 +63,7 @@ const LoginScreen = () => {
       title: "Recordatorio de citas",
       body: `Hoy tienes ${appointmentCount} cita(s) programada(s).`,
     };
-  
+
     await Notifications.scheduleNotificationAsync({
       content: notificationContent,
       trigger: null,
@@ -64,12 +77,10 @@ const LoginScreen = () => {
       const appointmentsSnapshot = await getDocs(
         collection(db, "userTest", userId, "appointments")
       );
-
       const todaysAppointments = appointmentsSnapshot.docs.filter((doc) => {
         const appointment = doc.data();
         return appointment.date === today;
       });
-
       return todaysAppointments.length;
     } catch (error) {
       console.error("Error al contar las citas:", error);
