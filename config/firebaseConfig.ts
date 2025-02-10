@@ -25,5 +25,7 @@ const auth = initializeAuth(app, {
 // Inicializar Firestore
 const db = getFirestore(app);
 
+
+
 // Exportamos auth y db para usarlos en otros archivos
-export { auth, db };
+export { auth, db};

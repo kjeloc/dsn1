@@ -1,4 +1,5 @@
 // app/theme.ts
+import { theme } from "antd";
 import { StyleSheet } from "react-native";
 
 export const lightTheme = {
@@ -75,3 +76,5 @@ export const globalStyles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+
+export default theme;
