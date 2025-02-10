@@ -1,8 +1,10 @@
 // app/_layout.tsx
 import { Stack } from "expo-router";
+import { ThemeProvider } from "./ThemeContext";
 
 export default function RootLayout() {
   return (
+    <ThemeProvider>
     <Stack>
       <Stack.Screen name="index" options={{ title: "Login" }} />
       <Stack.Screen name="menuAdmin" options={{ title: "Admin" }} />
@@ -15,8 +17,8 @@ export default function RootLayout() {
       <Stack.Screen name="registerUser" options={{ title: "Registro de Usuario" }} />      
       <Stack.Screen name="registerDentist" options={{ title: "Registro de Dentista" }} />       
       <Stack.Screen name="ProfileDentist" options={{ title: "Registro de Dentista" }} />
-      <Stack.Screen name="ProfilePatient" options={{ title: "Perfil del Paciente" }} />
-      
+      <Stack.Screen name="ProfilePatient" options={{ title: "Perfil del Paciente" }} /> 
     </Stack>
+    </ThemeProvider>
   );
 }

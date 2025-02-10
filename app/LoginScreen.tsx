@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
-import { View, TextInput, Button, StyleSheet, Text, Alert, Platform } from "react-native";
+// app/LoginScreen.tsx
+import { useState,useEffect} from "react";
+import { View, TextInput, Button, StyleSheet, Text, Alert, Platform, TouchableOpacity } from "react-native";
 import { collection, getDocs, query, where, doc, updateDoc } from "firebase/firestore";
-import { auth, db } from "../config/firebaseConfig";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import * as Location from "expo-location"; // Importar expo-location
-import * as Notifications from 'expo-notifications';
+import * as Location from "expo-location";
+import * as Notifications from "expo-notifications";
 import dayjs from "dayjs";
+import { useTheme } from "./ThemeContext"; // Importar el hook para cambiar el tema
+import { db } from "../config/firebaseConfig";
+import { useRouter, useLocalSearchParams } from "expo-router";
 
-// Configurar el manejador de notificaciones
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -19,10 +20,11 @@ Notifications.setNotificationHandler({
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false); // Estado para bloquear los campos
   const router = useRouter();
   const { userId } = useLocalSearchParams();
+  const { theme, toggleTheme } = useTheme(); // Obtener el tema y la función para alternar
 
-  // Solicitar permisos de notificaciones al cargar el componente
   useEffect(() => {
     const requestNotificationPermissions = async () => {
       const { status } = await Notifications.requestPermissionsAsync();
@@ -37,7 +39,6 @@ const LoginScreen = () => {
     requestNotificationPermissions();
   }, []);
 
-  // Función para obtener la ubicación actual del usuario
   const getUserLocation = async (userId: string) => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -47,9 +48,8 @@ const LoginScreen = () => {
       }
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
-      // Actualizar el documento del usuario en Firestore con la ubicación
       await updateDoc(doc(db, "userTest", userId), {
-        AcPos: { latitude, longitude }, // Guardar como un objeto con latitud y longitud
+        AcPos: { latitude, longitude },
       });
       console.log("Ubicación registrada:", { latitude, longitude });
     } catch (error) {
@@ -57,26 +57,21 @@ const LoginScreen = () => {
     }
   };
 
-  // Función para programar una notificación local
   const scheduleNotification = async (appointmentCount: number) => {
     const notificationContent = {
       title: "Recordatorio de citas",
       body: `Hoy tienes ${appointmentCount} cita(s) programada(s).`,
     };
-
     await Notifications.scheduleNotificationAsync({
       content: notificationContent,
       trigger: null,
     });
   };
 
-  // Función para contar las citas del día actual
   const countAppointmentsForToday = async (userId: string) => {
     try {
-      const today = dayjs().format("YYYY-MM-DD"); // Fecha actual en formato YYYY-MM-DD
-      const appointmentsSnapshot = await getDocs(
-        collection(db, "userTest", userId, "appointments")
-      );
+      const today = dayjs().format("YYYY-MM-DD");
+      const appointmentsSnapshot = await getDocs(collection(db, "userTest", userId, "appointments"));
       const todaysAppointments = appointmentsSnapshot.docs.filter((doc) => {
         const appointment = doc.data();
         return appointment.date === today;
@@ -89,8 +84,13 @@ const LoginScreen = () => {
   };
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Por favor, completa todos los campos.");
+      return;
+    }
+
+    setIsLoading(true); // Bloquear los campos
     try {
-      // Buscar el usuario en la colección "userTest"
       const usersRef = collection(db, "userTest");
       const q = query(usersRef, where("email", "==", email));
       const querySnapshot = await getDocs(q);
@@ -104,18 +104,9 @@ const LoginScreen = () => {
         Alert.alert("Error", "Contraseña incorrecta");
         return;
       }
-
-      // Obtener la ubicación del usuario y actualizar el documento
       await getUserLocation(userDoc.id);
-
-      // Contar las citas del día actual
-      console.log("Es culpa del Login Screen");
       const appointmentCount = await countAppointmentsForToday(userDoc.id);
-
-      // Programar la notificación
       await scheduleNotification(appointmentCount);
-
-      // Redirigir según el rol del usuario
       if (userData.rol === "Admin") {
         router.push("/menuAdmin");
       } else if (userData.rol === "Dentist") {
@@ -128,27 +119,51 @@ const LoginScreen = () => {
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
       Alert.alert("Error", "Ocurrió un error al iniciar sesión");
+    } finally {
+      setIsLoading(false); // Desbloquear los campos
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Iniciar Sesión</Text>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {/* Botón de Cambio de Tema */}
+      <TouchableOpacity onPress={toggleTheme} style={styles.themeButton}>
+        <Text style={styles.themeButtonText}>T</Text>
+      </TouchableOpacity>
+
+      <Text style={[styles.title, { color: theme.colors.text }]}>Iniciar Sesión</Text>
       <TextInput
-        style={styles.input}
+        style={[
+          styles.input,
+          { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+        ]}
         placeholder="Correo electrónico"
+        placeholderTextColor={theme.colors.secondary}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
+        keyboardType="email-address"
+        editable={!isLoading} // Deshabilitar cuando isLoading es true
       />
       <TextInput
-        style={styles.input}
+        style={[
+          styles.input,
+          { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+        ]}
         placeholder="Contraseña"
+        placeholderTextColor={theme.colors.secondary}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        editable={!isLoading} // Deshabilitar cuando isLoading es true
       />
-      <Button title="Iniciar Sesión" onPress={handleLogin} />
+      <TouchableOpacity
+        style={[styles.button, { opacity: isLoading ? 0.5 : 1 }]} // Reducir opacidad cuando isLoading es true
+        onPress={handleLogin}
+        disabled={isLoading} // Deshabilitar el botón cuando isLoading es true
+      >
+        <Text style={styles.buttonText}>{isLoading ? "Iniciando..." : "Iniciar Sesión"}</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -156,7 +171,6 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#181818",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -164,19 +178,42 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     marginBottom: 20,
-    color: "#fff",
     fontWeight: "600",
   },
   input: {
     height: 50,
-    borderColor: "#333",
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: 15,
     paddingHorizontal: 15,
     borderRadius: 8,
-    backgroundColor: "#2c2f33",
-    color: "#fff",
+    width: "100%",
     fontSize: 16,
+  },
+  button: {
+    backgroundColor: "#007BFF",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    width: "100%",
+  },
+  buttonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  themeButton: {
+    position: "absolute",
+    top: 20,
+    right: 20,
+    width: 40,
+    height: 40,
+    backgroundColor: "#E0E0E0",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  themeButtonText: {
+    fontSize: 20,
   },
 });
 
