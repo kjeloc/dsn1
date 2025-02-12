@@ -1,5 +1,12 @@
 import React, { useEffect, useState, useCallback } from "react";
-import {  View,  Text,  StyleSheet,  FlatList,  ActivityIndicator,  TouchableOpacity,} from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
 import { db } from "../config/firebaseConfig";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
@@ -21,15 +28,16 @@ const MenuDentist: React.FC = () => {
   const [dentistName, setDentistName] = useState<string | null>(null);
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const router = useRouter();
-  const { userId } = useLocalSearchParams();
+  const { userId } = useLocalSearchParams<{ userId: string }>();
   const [mostrarCalendario, setMostrarCalendario] = useState(true);
   const toggleCalendario = () => setMostrarCalendario(!mostrarCalendario);
 
+  // Cargar citas del odontólogo
   const fetchAppointments = useCallback(async () => {
     if (!userId) return;
     try {
       const querySnapshot = await getDocs(
-        collection(db, "userTest", userId as string, "appointments")
+        collection(db, "userTest", userId, "appointments")
       );
       const appointmentList: Appointment[] = [];
       querySnapshot.forEach((doc) => {
@@ -46,10 +54,11 @@ const MenuDentist: React.FC = () => {
     }
   }, [userId]);
 
+  // Cargar datos del odontólogo
   const fetchDentistData = useCallback(async () => {
     if (!userId) return;
     try {
-      const userDoc = await getDoc(doc(db, "userTest", userId as string));
+      const userDoc = await getDoc(doc(db, "userTest", userId));
       if (userDoc.exists()) {
         setDentistName(userDoc.data()?.name || "Menu Dentista");
       }
@@ -161,24 +170,38 @@ const MenuDentist: React.FC = () => {
             onPress={() =>
               router.push({
                 pathname: "/QRScannerScreen",
-                params: { appointments: JSON.stringify(appointments) }, // Pasar las citas como parámetro
+                params: { appointments: JSON.stringify(appointments) },
               })
             }
           >
             <Text style={styles.qrButtonText}>Escanear QR</Text>
           </TouchableOpacity>
+
+          {/* Botón para Agregar Cita */}
           <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => router.push(`/addAppointment?userId=${userId}`)}
-      >
-        <Text style={styles.addButtonText}>Agregar Cita</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => router.push(`/ProfileDentist?userId=${userId}`)}
-      >
-        <Text style={styles.addButtonText}>Perfil</Text>
-      </TouchableOpacity>
+            style={styles.addButton}
+            onPress={() => router.push(`/addAppointment?userId=${userId}`)}
+          >
+            <Text style={styles.addButtonText}>Agregar Cita</Text>
+          </TouchableOpacity>
+
+          {/* Botón para Perfil */}
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => router.push(`/ProfileDentist?userId=${userId}`)}
+          >
+            <Text style={styles.addButtonText}>Perfil</Text>
+          </TouchableOpacity>
+
+          {/* Botón para Ir al Chat */}
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => router.push(`/ChatListScreen?userId=${userId}`)}
+          >
+            <Text style={styles.addButtonText}>Ir al Chat</Text>
+          </TouchableOpacity>
+
+          {/* Calendario */}
           <TouchableOpacity onPress={toggleCalendario}>
             <Text style={styles.subtitle}>
               {mostrarCalendario ? "Ocultar Calendario" : "Mostrar Calendario"}
@@ -186,6 +209,7 @@ const MenuDentist: React.FC = () => {
           </TouchableOpacity>
           {mostrarCalendario && renderCalendar()}
 
+          {/* Subtítulo */}
           <Text style={styles.subtitle}>
             {selectedDays.length === 0 ? "Próximas citas" : "Citas Agendadas"}
           </Text>
@@ -216,7 +240,6 @@ const MenuDentist: React.FC = () => {
           No hay citas para los días seleccionados.
         </Text>
       }
-      
     />
   );
 };

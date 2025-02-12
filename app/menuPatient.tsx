@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator,Alert} from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { db } from "../config/firebaseConfig";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -180,22 +180,30 @@ const MenuPatient: React.FC = () => {
           <Text style={styles.error}>No hay datos disponibles</Text>
         )}
       </View>
-       <TouchableOpacity
-                  style={styles.dentalButton}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/DentalTips",
-                    })
-                  }
-                >
-                  <Text style={styles.dentalText}>Tips Dentales</Text>
-                </TouchableOpacity>
-       <TouchableOpacity
-               style={styles.addButton}
-               onPress={() => router.push(`/ProfilePatient?userId=${userId}`)}
-             >
-               <Text style={styles.addButtonText}>Perfil</Text>
-             </TouchableOpacity>         
+      <TouchableOpacity
+        style={styles.dentalButton}
+        onPress={() =>
+          router.push({
+            pathname: "/DentalTips",
+          })
+        }
+      >
+        <Text style={styles.dentalText}>Tips Dentales</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => router.push(`/ProfilePatient?userId=${userId}`)}
+      >
+        <Text style={styles.addButtonText}>Perfil</Text>
+      </TouchableOpacity>
+
+      {/* Botón para Ir al Chat */}
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => router.push(`/ChatListScreen?userId=${userId}`)}
+      >
+        <Text style={styles.addButtonText}>Ir al Chat</Text>
+      </TouchableOpacity>
 
       <Text style={styles.subtitle}>Próximas Citas</Text>
       <FlatList
@@ -329,7 +337,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
-  },addButton: {
+  }, addButton: {
     backgroundColor: "#007BFF",
     padding: 15,
     borderRadius: 8,

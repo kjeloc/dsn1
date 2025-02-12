@@ -18,6 +18,8 @@ export default function RootLayout() {
       <Stack.Screen name="registerDentist" options={{ title: "Registro de Dentista" }} />       
       <Stack.Screen name="ProfileDentist" options={{ title: "Registro de Dentista" }} />
       <Stack.Screen name="ProfilePatient" options={{ title: "Perfil del Paciente" }} /> 
+      <Stack.Screen name="ChatListScreen" options={{title: "Lista de Chats"}} />
+      <Stack.Screen name="ChatScreen" options={{title: "Chats"}} />
     </Stack>
     </ThemeProvider>
   );
