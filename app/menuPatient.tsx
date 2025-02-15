@@ -205,6 +205,14 @@ const MenuPatient: React.FC = () => {
         <Text style={styles.addButtonText}>Ir al Chat</Text>
       </TouchableOpacity>
 
+       {/* Botón para Ir al Chat */}
+        <TouchableOpacity
+    style={styles.addButton}
+    onPress={() => router.push(`/MapScreen`)}
+  >
+    <Text style={styles.addButtonText}>Ir al Mapa</Text>
+  </TouchableOpacity>
+
       <Text style={styles.subtitle}>Próximas Citas</Text>
       <FlatList
         data={getUpcomingAppointments()}
