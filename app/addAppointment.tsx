@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform } from "react-native";
+import { ScrollView, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { db } from "../config/firebaseConfig";
 import { collection, addDoc, doc, getDoc, getDocs, query, where } from "firebase/firestore";
@@ -107,7 +107,9 @@ const AddAppointment: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    
+      <ScrollView
+          >
       <Text style={styles.title}>Agregar Nueva Cita</Text>
 
       <Controller
@@ -196,7 +198,7 @@ const AddAppointment: React.FC = () => {
       <TouchableOpacity style={styles.button} onPress={handleSubmit(onSubmit)}>
         <Text style={styles.buttonText}>Agregar Cita</Text>
       </TouchableOpacity>
-    </View>
+      </ScrollView>
   );
 };
 

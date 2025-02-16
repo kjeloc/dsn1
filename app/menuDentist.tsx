@@ -193,6 +193,16 @@ const MenuDentist: React.FC = () => {
             <Text style={styles.addButtonText}>Perfil</Text>
           </TouchableOpacity>
 
+          {/* Botón para Crear Foro */}
+    <TouchableOpacity style={styles.addButton} onPress={() => router.push(`/CreateForum?userId=${userId}`)}>
+      <Text style={styles.addButtonText}>Crear Foro</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity style={styles.addButton} onPress={() => router.push(`/ListaForos?userId=${userId}`)}>
+      <Text style={styles.addButtonText}>Ver Foros</Text>
+    </TouchableOpacity>
+
+
           {/* Botón para Ir al Chat */}
           <TouchableOpacity
             style={styles.addButton}
@@ -200,6 +210,7 @@ const MenuDentist: React.FC = () => {
           >
             <Text style={styles.addButtonText}>Ir al Chat</Text>
           </TouchableOpacity>
+          
 
           {/* Calendario */}
           <TouchableOpacity onPress={toggleCalendario}>
