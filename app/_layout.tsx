@@ -20,6 +20,7 @@ export default function RootLayout() {
         <Stack.Screen name="ProfilePatient" options={{ title: "Perfil del Paciente" }} />
         <Stack.Screen name="ChatListScreen" options={{ title: "Lista de Chats" }} />
         <Stack.Screen name="ChatScreen" options={{ title: "Chats" }} />
+        <Stack.Screen name="DentisListScreen" options={{ title: "Odontólogos Asociados" }} />
         <Stack.Screen name="MapScreen" options={{ title: "Mapa" }} />
       </Stack>
     </ThemeProvider>
