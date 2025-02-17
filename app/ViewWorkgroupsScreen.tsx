@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { db } from '../config/firebaseConfig';
-import { collection, getDocs,getDoc, doc, query, where, or, } from 'firebase/firestore';
+import { collection, getDocs,getDoc, doc, query, where, } from 'firebase/firestore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 interface Workgroup {
@@ -15,6 +15,7 @@ interface Workgroup {
 
 const ViewWorkgroupsScreen: React.FC = () => {
   const router = useRouter();
+  const { userId } = useLocalSearchParams<{ userId: string }>();
   const { dentistEmail } = useLocalSearchParams<{ dentistEmail: string }>();
   const [workgroups, setWorkgroups] = useState<Workgroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,11 +28,17 @@ const ViewWorkgroupsScreen: React.FC = () => {
 
         if (!userEmail) return;
 
-        const q = query(collection(db, 'workgroups'),(where('members', 'array-contains', userEmail)));
+        const q = query(collection(db, 'workgroups'),(where('memberEmails', 'array-contains', userEmail)));
         const querySnapshot = await getDocs(q);
         const workgroupsData: Workgroup[] = [];
         querySnapshot.forEach((doc) => {
-          workgroupsData.push({ id: doc.id, ...doc.data() } as Workgroup);
+          workgroupsData.push({
+            id: doc.id,
+            name: doc.data().groupName || '',
+            owner: doc.data().ownerEmail || '',
+            admins: doc.data().adminEmails || [],
+            members: doc.data().memberEmails || []
+          } as Workgroup);
         });
         setWorkgroups(workgroupsData);
       } catch (error) {
@@ -48,6 +55,9 @@ const ViewWorkgroupsScreen: React.FC = () => {
     router.push(`/ViewWorkgroupDetails?groupId=${groupId}`);
   };
 
+  const handleViewGroupChats = (groupId: string) => {
+    router.push(`/GroupChatScreen?groupId=${groupId}&userId=${userId}`);
+  };
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -71,7 +81,7 @@ const ViewWorkgroupsScreen: React.FC = () => {
         data={workgroups}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => handleViewGroup(item.id)}>
+          <TouchableOpacity onPress={() => handleViewGroupChats(item.id)}>
             <View style={styles.workgroupItem}>
               <Text style={styles.workgroupName}>{item.name}</Text>
               <Text>Dueño: {item.owner}</Text>

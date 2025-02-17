@@ -24,6 +24,9 @@ export default function RootLayout() {
       <Stack.Screen name="lista-foros" options={{ title: "Lista de Foros" }} />
       <Stack.Screen name="ver-foro/[id]" options={{ title: "Ver Foro" }} />
       <Stack.Screen name="CreateWorkgroups" options={{ title: 'Crear Grupo de Trabajo' }} />
+      <Stack.Screen name="ViewWorkgroupsScreen" options={{ title: 'Ver Grupo de Trabajo' }} />
+      <Stack.Screen name="ViewWorkgroupDetails" options={{ title: 'Detalles Grupo de Trabajo' }} />
+      <Stack.Screen name="GroupChatScreen" options={{ title: 'Chat Grupo de Trabajo' }} />
     </Stack>
     </ThemeProvider>
   );

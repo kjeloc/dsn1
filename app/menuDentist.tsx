@@ -225,7 +225,7 @@ const MenuDentist: React.FC = () => {
 
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => router.push(`/ViewWorkgroupsScreen?dentistEmail=${dentistEmail}`)}
+            onPress={() => router.push(`/ViewWorkgroupsScreen?dentistEmail=${dentistEmail}&userId=${userId}`)}
           >
             <Text style={styles.addButtonText}>Ver Grupos de Trabajo</Text>
           </TouchableOpacity>
