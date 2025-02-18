@@ -31,6 +31,7 @@ const MenuDentist: React.FC = () => {
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const [mostrarCalendario, setMostrarCalendario] = useState(true);
   const toggleCalendario = () => setMostrarCalendario(!mostrarCalendario);
+  const [dentistEmail, setDentistEmail] = useState<string>("");
 
   // Cargar citas del odontólogo
   const fetchAppointments = useCallback(async () => {
@@ -61,6 +62,7 @@ const MenuDentist: React.FC = () => {
       const userDoc = await getDoc(doc(db, "userTest", userId));
       if (userDoc.exists()) {
         setDentistName(userDoc.data()?.name || "Menu Dentista");
+        setDentistEmail(userDoc.data()?.email || "");
       }
     } catch (error) {
       console.error("Error al obtener el nombre del dentista:", error);
@@ -193,6 +195,16 @@ const MenuDentist: React.FC = () => {
             <Text style={styles.addButtonText}>Perfil</Text>
           </TouchableOpacity>
 
+          {/* Botón para Crear Foro */}
+    <TouchableOpacity style={styles.addButton} onPress={() => router.push(`/CreateForum?userId=${userId}`)}>
+      <Text style={styles.addButtonText}>Crear Foro</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity style={styles.addButton} onPress={() => router.push(`/ListaForos?userId=${userId}`)}>
+      <Text style={styles.addButtonText}>Ver Foros</Text>
+    </TouchableOpacity>
+
+
           {/* Botón para Ir al Chat */}
           <TouchableOpacity
             style={styles.addButton}
@@ -200,7 +212,23 @@ const MenuDentist: React.FC = () => {
           >
             <Text style={styles.addButtonText}>Ir al Chat</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => router.push(`/CreateWorkgroup?dentistEmail=${dentistEmail}`)}
+          >
+          {/* <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => router.push(`/CreateWorkgroupScreen?dentistEmail=${dentistEmail}`)}
+          > */}
+            <Text style={styles.addButtonText}>Crear Grupo de Trabajo</Text>
+          </TouchableOpacity>
 
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => router.push(`/ViewWorkgroupsScreen?dentistEmail=${dentistEmail}&userId=${userId}`)}
+          >
+            <Text style={styles.addButtonText}>Ver Grupos de Trabajo</Text>
+          </TouchableOpacity>
           {/* Calendario */}
           <TouchableOpacity onPress={toggleCalendario}>
             <Text style={styles.subtitle}>
