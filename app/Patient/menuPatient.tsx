@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, ScrollView,Image } from "react-native";
 import { db } from "../../config/firebaseConfig";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -7,7 +7,10 @@ import axios from "axios";
 import * as Location from "expo-location";
 import dayjs from "dayjs";
 import { API_CLIMA } from "../../config/apiConfig";
-import { Appointment,UserData,WeatherData } from "../utils/types";
+import { Appointment, UserData, WeatherData } from "../utils/types";
+import { useAppTheme } from "../Constants/Colors"; // Importar los colores dinámicos
+import { LinearGradient } from "expo-linear-gradient";
+
 const API_KEY = API_CLIMA;
 
 const MenuPatient: React.FC = () => {
@@ -18,6 +21,7 @@ const MenuPatient: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [showPreviousAppointments, setShowPreviousAppointments] = useState(false);
   const router = useRouter();
+  const theme = useAppTheme(); // Obtener el tema dinámico
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -58,10 +62,8 @@ const MenuPatient: React.FC = () => {
           Alert.alert("Permiso denegado", "Se requiere acceso a la ubicación.");
           return;
         }
-
         const location = await Location.getCurrentPositionAsync({});
         const { latitude, longitude } = location.coords;
-
         const response = await axios.get(
           `https://api.openweathermap.org/data/2.5/weather`,
           {
@@ -70,10 +72,11 @@ const MenuPatient: React.FC = () => {
               lon: longitude,
               appid: API_KEY,
               units: "metric",
+              lang: "es",
             },
           }
-        );
-
+        ); 
+        console.log("Respuesta del clima:", response.data);
         setWeather(response.data);
       } catch (error) {
         console.error("Error al obtener el clima:", error);
@@ -110,127 +113,158 @@ const MenuPatient: React.FC = () => {
 
   const renderAppointmentItem = ({ item }: { item: Appointment }) => (
     <TouchableOpacity
-      style={styles.appointmentCard}
+      style={[styles.appointmentCard, { backgroundColor: theme.card, borderColor: theme.border }]}
       onPress={() =>
         router.push({
           pathname: "/Patient/Apointment/ViewAppointmentPatient",
           params: { appointment: JSON.stringify(item) },
         })
-      }
+      } key={item.id}
     >
-      <Text style={styles.appointmentText}>Fecha: {item.date}</Text>
-      <Text style={styles.appointmentText}>Hora: {item.hour}</Text>
-      <Text style={styles.appointmentText}>Motivo: {item.reason}</Text>
-      <Text style={styles.appointmentText}>Consultorio: {item.dentalOffice}</Text>
-      <Text style={styles.appointmentText}>Dentista: {item.dentistEmail}</Text>
+      <Text style={[styles.appointmentText, { color: theme.text }]}>Fecha: {item.date}</Text>
+      <Text style={[styles.appointmentText, { color: theme.text }]}>Hora: {item.hour}</Text>
+      <Text style={[styles.appointmentText, { color: theme.text }]}>Motivo: {item.reason}</Text>
+      <Text style={[styles.appointmentText, { color: theme.text }]}>Consultorio: {item.dentalOffice}</Text>
+      <Text style={[styles.appointmentText, { color: theme.text }]}>Dentista: {item.dentistEmail}</Text>
     </TouchableOpacity>
   );
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007BFF" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Información del Paciente</Text>
-      {userData ? (
-        <View style={styles.card}>
-          <Text style={styles.cardText}>Nombre: {userData.name}</Text>
-          <Text style={styles.cardText}>Correo: {userData.email}</Text>
-          {userData.age && <Text style={styles.cardText}>Edad: {userData.age}</Text>}
-        </View>
-      ) : (
-        <Text>No se encontraron datos del usuario.</Text>
-      )}
+    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}>
 
+      <View style={styles.userSection}>
+  {/* Gradiente de fondo */}
+  <LinearGradient
+    colors={["rgba(49, 46, 46, 0.53)", "transparent"]}
+    style={styles.gradientOverlay}
+  />
+    {/* Bienvenida y datos del usuario */}
+    <View style={styles.userInfo}>
+      <Text style={[styles.welcomeText, { color: theme.text }]}>Bienvenido, {userData?.name}!</Text>
+    </View>
+  {/* Contenido */}
+  <View style={styles.profileImageContainer}>
+    <Image
+      source={{ uri: userData?.profilePicture || "https://via.placeholder.com/150" }}
+      style={styles.profileImage}
+    />
+  </View>
+</View>
+      {/* Predicción del Clima */}
       <View style={styles.weatherSection}>
-        <Text style={styles.subtitle}>Predicción del Clima</Text>
+        <Text style={[styles.subtitle, { color: theme.text }]}>Predicción del Clima</Text>
         {weather ? (
-          <View style={styles.weatherInfo}>
-            <Text style={styles.city}>{weather.name}</Text>
-            <Text style={styles.temp}>{Math.round(weather.main.temp)}°C</Text>
-            <Text style={styles.desc}>{weather.weather[0].description}</Text>
+          <View style={[styles.weatherInfo, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.city, { color: theme.text }]}>{weather.name}</Text>
+            <Image source={{ uri: `http://openweathermap.org/img/w/${weather.weather[0].icon}.png` }} style={{ width: 50, height: 50 }} />
+            <Text style={[styles.temp, { color: theme.text }]}>{Math.round(weather.main.temp)}°C</Text>
+            <Text style={[styles.desc, { color: theme.text }]}>{weather.weather[0].description}</Text>
+            
           </View>
         ) : (
-          <Text style={styles.error}>No hay datos disponibles</Text>
+          <Text style={[styles.error, { color: theme.error }]}>No hay datos disponibles</Text>
         )}
       </View>
+      {/* Próximas Citas */}
+      <Text style={[styles.subtitle, { color: theme.text }]}>Próximas Citas</Text>
+      {/* <FlatList
+        data={getUpcomingAppointments()}
+        keyExtractor={(item) => item.id}
+        renderItem={renderAppointmentItem}
+        ListEmptyComponent={
+          <Text style={[styles.emptyText, { color: theme.text }]}>No hay citas próximas.</Text>
+        }
+      /> */}
+      <View>
+        {getUpcomingAppointments().length!==0?getUpcomingAppointments().map((appointment,key) => (
+         renderAppointmentItem({ item: appointment })
+        ),):<Text style={[styles.emptyText, { color: theme.text }]}>No hay citas próximas.</Text>}
+      </View>
+       {/* Botón para Ver/Ocultar Citas Previas */}
+       <TouchableOpacity
+        style={[styles.button, { backgroundColor: theme.button }]}
+        onPress={() => setShowPreviousAppointments(!showPreviousAppointments)}
+      >
+        <Text style={[styles.buttonText, { color: theme.text }]}>
+          {showPreviousAppointments ? "Ocultar Citas Previas" : "Ver Citas Previas"}
+        </Text>
+      </TouchableOpacity>
+       
+
+      {/* Citas Previas */}
+      {showPreviousAppointments && (
+        <>
+          <Text style={[styles.subtitle, { color: theme.text }]}>Citas Previas</Text>
+          {/* <FlatList
+            data={getPreviousAppointments()}
+            keyExtractor={(item) => item.id}
+            renderItem={renderAppointmentItem}
+            ListEmptyComponent={
+              <Text style={[styles.emptyText, { color: theme.text }]}>No hay citas previas.</Text>
+            }
+          /> */}
+          <ScrollView horizontal contentContainerStyle={{ alignItems: "center", gap: 10 }}>
+
+            {getPreviousAppointments().map((appointment) => (
+              renderAppointmentItem({ item: appointment })
+            ),)}
+  
+          </ScrollView>
+        </>
+      )}
+
+      {/* Botones de Acción */}
       <TouchableOpacity
-        style={styles.dentalButton}
+        style={[styles.dentalButton, { backgroundColor: theme.button }]}
         onPress={() =>
           router.push({
             pathname: "/Patient/AI/DentalTips",
           })
         }
       >
-        <Text style={styles.dentalText}>Tips Dentales</Text>
+        <Text style={[styles.dentalText, { color: theme.text }]}>Tips Dentales</Text>
       </TouchableOpacity>
+
       <TouchableOpacity
-        style={styles.addButton}
+        style={[styles.addButton, { backgroundColor: theme.button }]}
         onPress={() => router.push(`/Patient/ProfilePatient?userId=${userId}`)}
       >
-        <Text style={styles.addButtonText}>Perfil</Text>
+        <Text style={[styles.addButtonText, { color: theme.text }]}>Perfil</Text>
       </TouchableOpacity>
 
-      {/* Botón para Ir al Chat */}
       <TouchableOpacity
-        style={styles.addButton}
+        style={[styles.addButton, { backgroundColor: theme.button }]}
         onPress={() => router.push(`/Chat/ChatListScreen?userId=${userId}`)}
       >
-        <Text style={styles.addButtonText}>Ir al Chat</Text>
+        <Text style={[styles.addButtonText, { color: theme.text }]}>Ir al Chat</Text>
       </TouchableOpacity>
+
       <TouchableOpacity
-        style={styles.addButton}
+        style={[styles.addButton, { backgroundColor: theme.button }]}
         onPress={() => router.push(`/Patient/Maps/DentisListScreen?userId=${userId}`)}
       >
-        <Text style={styles.addButtonText}>Ir al Mapa</Text>
+        <Text style={[styles.addButtonText, { color: theme.text }]}>Ir al Mapa</Text>
       </TouchableOpacity>
 
-      <Text style={styles.subtitle}>Próximas Citas</Text>
-      <FlatList
-        data={getUpcomingAppointments()}
-        keyExtractor={(item) => item.id}
-        renderItem={renderAppointmentItem}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No hay citas próximas.</Text>
-        }
-      />
+     
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => setShowPreviousAppointments(!showPreviousAppointments)}
-      >
-        <Text style={styles.buttonText}>
-          {showPreviousAppointments ? "Ocultar Citas Previas" : "Ver Citas Previas"}
-        </Text>
-      </TouchableOpacity>
-
-      {showPreviousAppointments && (
-        <>
-          <Text style={styles.subtitle}>Citas Previas</Text>
-          <FlatList
-            data={getPreviousAppointments()}
-            keyExtractor={(item) => item.id}
-            renderItem={renderAppointmentItem}
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>No hay citas previas.</Text>
-            }
-          />
-        </>
-      )}
-    </View>
+     
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     padding: 20,
-    backgroundColor: "#F9F9F9",
   },
   title: {
     fontSize: 24,
@@ -244,7 +278,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   card: {
-    backgroundColor: "#E0F7FA",
     padding: 20,
     borderRadius: 8,
     marginBottom: 20,
@@ -252,15 +285,16 @@ const styles = StyleSheet.create({
   },
   cardText: {
     fontSize: 16,
-    marginBottom: 8,
+    marginBottom: 5,
   },
   weatherSection: {
-    marginTop: 20,
+    marginTop: 0,
     alignItems: "center",
+    transform: [{ translateY: -30 }], // Mover hacia arriba
   },
   weatherInfo: {
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 0,
   },
   city: {
     fontSize: 20,
@@ -275,34 +309,28 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
   },
   error: {
-    color: "#FF0000",
     fontSize: 16,
   },
   appointmentCard: {
-    backgroundColor: "#E0F7FA",
     padding: 15,
     borderRadius: 8,
     marginBottom: 10,
   },
   appointmentText: {
     fontSize: 16,
-    color: "#333",
   },
   emptyText: {
     textAlign: "center",
     fontSize: 16,
-    color: "#666",
     marginVertical: 20,
   },
   button: {
-    backgroundColor: "#007BFF",
     padding: 15,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 20,
   },
   buttonText: {
-    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
   },
@@ -312,28 +340,67 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   dentalButton: {
-    backgroundColor: "#007BFF",
     padding: 15,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 20,
   },
   dentalText: {
-    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
-  }, addButton: {
-    backgroundColor: "#007BFF",
+  },
+  addButton: {
     padding: 15,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 20,
   },
   addButtonText: {
-    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
   },
+  userSection: {
+    alignItems: "center",
+    paddingVertical: 20,
+    borderRadius: 8,
+    marginBottom: 20,
+    overflow: "hidden", // Asegura que la imagen no se desborde
+  },
+  profileImageContainer: {
+    width: 150,
+    height: 150,
+    borderRadius: 75, // Hace que la imagen sea un círculo
+    overflow: "hidden",
+    marginBottom: 0,
+    alignSelf: "center",
+    position: "relative",
+  },
+  profileImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  userInfo: {
+    alignItems: "center",
+  },
+  welcomeText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  userDataText: {
+    fontSize: 16,
+    marginBottom: 5,
+    textAlign: "center",
+  },
+  gradientOverlay: {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+},
 });
 
 export default MenuPatient;

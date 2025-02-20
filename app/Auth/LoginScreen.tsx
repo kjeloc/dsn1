@@ -108,11 +108,11 @@ const LoginScreen = () => {
       const appointmentCount = await countAppointmentsForToday(userDoc.id);
       await scheduleNotification(appointmentCount);
       if (userData.rol === "Admin") {
-        router.push("/Admin/menuAdmin");
+        router.replace("/Admin/menuAdmin");
       } else if (userData.rol === "Dentist") {
-        router.push(`/Dentist/menuDentist?userId=${userDoc.id}`);
+        router.replace(`/Dentist/menuDentist?userId=${userDoc.id}`);
       } else if (userData.rol === "Patient") {
-        router.push(`/Patient/menuPatient?userId=${userDoc.id}`);
+        router.replace(`/Patient/menuPatient?userId=${userDoc.id}`);
       } else {
         Alert.alert("Error", "Rol no válido");
       }
@@ -127,10 +127,6 @@ const LoginScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Botón de Cambio de Tema */}
-      <TouchableOpacity onPress={() => {}} style={styles.themeButton}>
-        <Text style={styles.themeButtonText}>T</Text>
-      </TouchableOpacity>
-
       <Text style={[styles.title, { color: theme.text }]}>Iniciar Sesión</Text>
       <TextInput
         style={[

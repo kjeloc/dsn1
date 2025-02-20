@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from "react";
-import {  View, Text, StyleSheet, ScrollView, ActivityIndicator,
-TouchableOpacity, Image, Alert, Modal, Pressable,} from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+  Image,
+  Alert,
+  Modal,
+  Pressable,
+} from "react-native";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useLocalSearchParams } from "expo-router";
 import { db } from "../../config/firebaseConfig";
@@ -9,10 +19,12 @@ import axios from "axios";
 import * as ImageManipulator from "expo-image-manipulator";
 import { Ionicons } from "@expo/vector-icons";
 import { PatientData } from "../utils/types";
+import { useAppTheme } from "../Constants/Colors"; // Importar los colores dinámicos
 
 const IMGUR_CLIENT_ID = "64c190c058b9f98";
 
 const ProfilePatient: React.FC = () => {
+  const theme = useAppTheme(); // Obtener el tema dinámico
   const { userId } = useLocalSearchParams();
   const [patientData, setPatientData] = useState<PatientData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,7 +32,7 @@ const ProfilePatient: React.FC = () => {
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [imageSelected, setImageSelected] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false); // Para mostrar el modal
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchPatientData = async () => {
@@ -29,7 +41,7 @@ const ProfilePatient: React.FC = () => {
         const userDoc = await getDoc(doc(db, "userTest", userId as string));
         if (userDoc.exists()) {
           const data = userDoc.data();
-          console.log("Datos del paciente:", data); // Depuración
+          console.log("Datos del paciente:", data);
           if (!data) {
             console.error("Los datos del paciente son undefined");
             return;
@@ -52,11 +64,10 @@ const ProfilePatient: React.FC = () => {
       allowsEditing: true,
       quality: 1,
     });
-
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
       setImageSelected(true);
-      setModalVisible(true); // Mostrar el modal cuando se seleccione una imagen
+      setModalVisible(true);
     }
   };
 
@@ -65,11 +76,10 @@ const ProfilePatient: React.FC = () => {
       allowsEditing: true,
       quality: 1,
     });
-
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
       setImageSelected(true);
-      setModalVisible(true); // Mostrar el modal cuando se tome una foto
+      setModalVisible(true);
     }
   };
 
@@ -92,19 +102,15 @@ const ProfilePatient: React.FC = () => {
       Alert.alert("Error", "Por favor selecciona una imagen primero");
       return;
     }
-
     setIsUploading(true);
-
     try {
       const resizedImageUri = await resizeImage(selectedImage);
-
       const formData = new FormData();
       formData.append("image", {
         uri: resizedImageUri,
         type: "image/jpeg",
         name: "profile.jpg",
       } as any);
-
       const response = await axios.post(
         "https://api.imgur.com/3/image",
         formData,
@@ -115,23 +121,19 @@ const ProfilePatient: React.FC = () => {
           },
         }
       );
-
       if (response.data.success) {
         const imageUrl = response.data.data.link;
-
         if (!userId) return;
         const userRef = doc(db, "userTest", userId as string);
         await updateDoc(userRef, {
           profilePicture: imageUrl,
         });
-
         setUploadedImageUrl(imageUrl);
         setPatientData((prev) =>
           prev ? { ...prev, profilePicture: imageUrl } : null
         );
-
         Alert.alert("Éxito", "Imagen subida y guardada correctamente");
-        setModalVisible(false); // Cerrar el modal después de subir la imagen
+        setModalVisible(false);
       } else {
         Alert.alert("Error", "No se pudo subir la imagen");
       }
@@ -145,23 +147,24 @@ const ProfilePatient: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007BFF" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
 
   if (!patientData) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>No se encontraron datos del paciente.</Text>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <Text style={[styles.title, { color: theme.text }]}>No se encontraron datos del paciente.</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollViewContainer}>
-      <Text style={styles.title}>Perfil del Paciente</Text>
+    <ScrollView contentContainerStyle={[styles.scrollViewContainer, { backgroundColor: theme.background }]}>
+      <Text style={[styles.title, { color: theme.text }]}>Perfil del Paciente</Text>
+
       {/* Imagen de perfil */}
       <View style={styles.profileImageContainer}>
         <Image
@@ -172,49 +175,50 @@ const ProfilePatient: React.FC = () => {
         {/* Botón de lápiz encima de la imagen */}
         <TouchableOpacity
           style={styles.editButton}
-          onPress={() => setModalVisible(true)} // Muestra el modal directamente al editar
+          onPress={() => setModalVisible(true)}
         >
           <Ionicons name="pencil-outline" size={25} color="white" />
         </TouchableOpacity>
       </View>
 
       {/* Nombre */}
-      <View style={styles.infoSection}>
-        <Text style={styles.label}>Nombre:</Text>
-        <Text style={styles.value}>{patientData.name}</Text>
+      <View style={[styles.infoSection, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.label, { color: theme.secondary }]}>Nombre:</Text>
+        <Text style={[styles.value, { color: theme.text }]}>{patientData.name}</Text>
       </View>
 
       {/* Correo Electrónico */}
-      <View style={styles.infoSection}>
-        <Text style={styles.label}>Correo Electrónico:</Text>
-        <Text style={styles.value}>{patientData.email}</Text>
+      <View style={[styles.infoSection, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.label, { color: theme.secondary }]}>Correo Electrónico:</Text>
+        <Text style={[styles.value, { color: theme.text }]}>{patientData.email}</Text>
       </View>
 
       {/* Fecha de Nacimiento */}
-      <View style={styles.infoSection}>
-        <Text style={styles.label}>Fecha de Nacimiento:</Text>
-        <Text style={styles.value}>{patientData.birthdate}</Text>
+      <View style={[styles.infoSection, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.label, { color: theme.secondary }]}>Fecha de Nacimiento:</Text>
+        <Text style={[styles.value, { color: theme.text }]}>{patientData.birthdate}</Text>
       </View>
 
       {/* Edad */}
-      <View style={styles.infoSection}>
-        <Text style={styles.label}>Edad:</Text>
-        <Text style={styles.value}>{patientData.age || "No especificada"}</Text>
+      <View style={[styles.infoSection, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.label, { color: theme.secondary }]}>Edad:</Text>
+        <Text style={[styles.value, { color: theme.text }]}>{patientData.age || "No especificada"}</Text>
       </View>
 
       {/* Citas Programadas */}
-      <View style={styles.infoSection}>
-        <Text style={styles.label}>Citas Programadas:</Text>
+      <View style={[styles.infoSection, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.label, { color: theme.secondary }]}>Citas Programadas:</Text>
         {patientData?.appointments?.length > 0 ? (
           patientData.appointments.map((appointment, index) => (
-            <Text key={index} style={styles.value}>
+            <Text key={index} style={[styles.value, { color: theme.text }]}>
               - {appointment.date} ({appointment.reason})
             </Text>
           ))
         ) : (
-          <Text style={styles.value}>No hay citas programadas.</Text>
+          <Text style={[styles.value, { color: theme.text }]}>No hay citas programadas.</Text>
         )}
       </View>
+
       {/* Modal con la previsualización y el botón de carga */}
       <Modal
         animationType="slide"
@@ -222,9 +226,9 @@ const ProfilePatient: React.FC = () => {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Previsualizar Imagen</Text>
+        <View style={[styles.modalOverlay, { backgroundColor: theme.modalBackground }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Previsualizar Imagen</Text>
             <Image
               source={{ uri: selectedImage || undefined }}
               style={styles.modalImage}
@@ -232,34 +236,34 @@ const ProfilePatient: React.FC = () => {
             />
             <View style={styles.buttonsContainer}>
               <TouchableOpacity
-                style={styles.cameraButton}
+                style={[styles.cameraButton, { backgroundColor: theme.button }]}
                 onPress={takePhoto}
               >
-                <Text style={styles.buttonText}>Tomar Foto</Text>
+                <Text style={[styles.buttonText, { color: theme.text }]}>Tomar Foto</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.cameraButton}
+                style={[styles.cameraButton, { backgroundColor: theme.button }]}
                 onPress={pickImage}
               >
-                <Text style={styles.buttonText}>Escoger Foto</Text>
+                <Text style={[styles.buttonText, { color: theme.text }]}>Escoger Foto</Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity
-              style={styles.uploadButton}
+              style={[styles.uploadButton, { backgroundColor: theme.button }]}
               onPress={uploadToImgur}
               disabled={isUploading}
             >
               {isUploading ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text style={styles.uploadButtonText}>Subir Imagen</Text>
+                <Text style={[styles.uploadButtonText, { color: theme.text }]}>Subir Imagen</Text>
               )}
             </TouchableOpacity>
             <Pressable
               style={styles.closeButton}
               onPress={() => setModalVisible(false)}
             >
-              <Text style={styles.closeButtonText}>Cerrar</Text>
+              <Text style={[styles.closeButtonText, { color: theme.text }]}>Cerrar</Text>
             </Pressable>
           </View>
         </View>

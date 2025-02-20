@@ -134,7 +134,20 @@ export interface User {
   
   export interface WeatherData {
     name: string;
-    main: { temp: number };
-    weather: { description: string }[];
+    main: {
+      temp: number;
+    };
+    weather: {
+      description: string;
+      icon: string;
+    }[];
   }
+  // utils/types.ts
+export interface UserData {
+  id?: string; // ID del usuario (opcional)
+  name: string; // Nombre del usuario
+  email: string; // Correo electrónico
+  age?: number; // Edad (opcional)
+  profilePicture?: string; // URL de la imagen de perfil (opcional)
+}
 export default {};

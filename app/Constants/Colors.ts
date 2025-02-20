@@ -10,6 +10,8 @@ export const Colors = {
     card: "#FFFFFF", // Fondo de tarjetas
     border: "#E0E0E0", // Bordes
     button: "#007BFF", // Botón
+    error: "#FF0000",
+    modalBackground: "rgba(0, 0, 0, 0.5)",
   },
   dark: {
     primary: "#BB86FC", // Color principal en modo oscuro
@@ -19,6 +21,8 @@ export const Colors = {
     card: "#1E1E1E", // Fondo de tarjetas oscuro
     border: "#303030", // Bordes oscuros
     button: "#BB86FC", // Botón en modo oscuro
+    error: "#FF4500",
+    modalBackground: "rgba(255, 255, 255, 0.5)",
   },
 };
 
