@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, ScrollView,Image } from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Image, ImageBackground } from "react-native";
 import { db } from "../../config/firebaseConfig";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -75,7 +75,7 @@ const MenuPatient: React.FC = () => {
               lang: "es",
             },
           }
-        ); 
+        );
         console.log("Respuesta del clima:", response.data);
         setWeather(response.data);
       } catch (error) {
@@ -137,37 +137,54 @@ const MenuPatient: React.FC = () => {
     );
   }
 
+  const CardWithBackground: React.FC<{ title: string; imageSource: any; onPress: () => void }> = ({ title, imageSource, onPress }) => {
+    return (
+      <TouchableOpacity onPress={onPress} style={styles.cardButtomContainer}>
+        <ImageBackground source={imageSource} style={styles.cardButtomBackground} imageStyle={styles.imageStyle}>
+          {/* Gradiente de desvanecimiento */}
+          <LinearGradient colors={[theme.mode === "dark" ? "rgba(153, 152, 152, 0.29)" : "rgba(128, 128, 128, 0.32)", "transparent",
+]} 
+            style={styles.gradientOverlay}
+          />
+          {/* Título de la tarjeta */}
+          <Text style={[styles.cardButtomTitle, { color: theme.textPrimary }]}>{title}</Text>
+        </ImageBackground>
+      </TouchableOpacity>
+    );
+  };
+
+
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}>
 
       <View style={styles.userSection}>
-  {/* Gradiente de fondo */}
-  <LinearGradient
-    colors={["rgba(49, 46, 46, 0.53)", "transparent"]}
-    style={styles.gradientOverlay}
-  />
-    {/* Bienvenida y datos del usuario */}
-    <View style={styles.userInfo}>
-      <Text style={[styles.welcomeText, { color: theme.text }]}>Bienvenido, {userData?.name}!</Text>
-    </View>
-  {/* Contenido */}
-  <View style={styles.profileImageContainer}>
-    <Image
-      source={{ uri: userData?.profilePicture || "https://via.placeholder.com/150" }}
-      style={styles.profileImage}
-    />
-  </View>
-</View>
+        {/* Gradiente de fondo */}
+        <LinearGradient colors={[theme.mode === "dark" ? "rgba(73, 73, 73, 0.3)" : "rgba(163, 163, 163, 0.32)", "transparent",
+]}
+          style={styles.gradientOverlay}
+        />
+        {/* Bienvenida y datos del usuario */}
+        <View style={styles.userInfo}>
+          <Text style={[styles.welcomeText, { color: theme.text }]}>Bienvenido, {userData?.name}!</Text>
+        </View>
+        {/* Contenido */}
+        <View style={styles.profileImageContainer}>
+          <Image
+            source={{ uri: userData?.profilePicture || "https://via.placeholder.com/150" }}
+            style={styles.profileImage}
+          />
+        </View>
+      </View>
       {/* Predicción del Clima */}
       <View style={styles.weatherSection}>
         <Text style={[styles.subtitle, { color: theme.text }]}>Predicción del Clima</Text>
         {weather ? (
-          <View style={[styles.weatherInfo, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <View style={[styles.weatherInfo, { backgroundColor: theme.cardWeather, borderColor: theme.border }]}>
             <Text style={[styles.city, { color: theme.text }]}>{weather.name}</Text>
             <Image source={{ uri: `http://openweathermap.org/img/w/${weather.weather[0].icon}.png` }} style={{ width: 50, height: 50 }} />
             <Text style={[styles.temp, { color: theme.text }]}>{Math.round(weather.main.temp)}°C</Text>
             <Text style={[styles.desc, { color: theme.text }]}>{weather.weather[0].description}</Text>
-            
+
           </View>
         ) : (
           <Text style={[styles.error, { color: theme.error }]}>No hay datos disponibles</Text>
@@ -175,21 +192,13 @@ const MenuPatient: React.FC = () => {
       </View>
       {/* Próximas Citas */}
       <Text style={[styles.subtitle, { color: theme.text }]}>Próximas Citas</Text>
-      {/* <FlatList
-        data={getUpcomingAppointments()}
-        keyExtractor={(item) => item.id}
-        renderItem={renderAppointmentItem}
-        ListEmptyComponent={
-          <Text style={[styles.emptyText, { color: theme.text }]}>No hay citas próximas.</Text>
-        }
-      /> */}
       <View>
-        {getUpcomingAppointments().length!==0?getUpcomingAppointments().map((appointment,key) => (
-         renderAppointmentItem({ item: appointment })
-        ),):<Text style={[styles.emptyText, { color: theme.text }]}>No hay citas próximas.</Text>}
+        {getUpcomingAppointments().length !== 0 ? getUpcomingAppointments().map((appointment, key) => (
+          renderAppointmentItem({ item: appointment })
+        ),) : <Text style={[styles.emptyText, { color: theme.text }]}>No hay citas próximas.</Text>}
       </View>
-       {/* Botón para Ver/Ocultar Citas Previas */}
-       <TouchableOpacity
+      {/* Botón para Ver/Ocultar Citas Previas */}
+      <TouchableOpacity
         style={[styles.button, { backgroundColor: theme.button }]}
         onPress={() => setShowPreviousAppointments(!showPreviousAppointments)}
       >
@@ -197,66 +206,64 @@ const MenuPatient: React.FC = () => {
           {showPreviousAppointments ? "Ocultar Citas Previas" : "Ver Citas Previas"}
         </Text>
       </TouchableOpacity>
-       
+
 
       {/* Citas Previas */}
       {showPreviousAppointments && (
         <>
           <Text style={[styles.subtitle, { color: theme.text }]}>Citas Previas</Text>
-          {/* <FlatList
-            data={getPreviousAppointments()}
-            keyExtractor={(item) => item.id}
-            renderItem={renderAppointmentItem}
-            ListEmptyComponent={
-              <Text style={[styles.emptyText, { color: theme.text }]}>No hay citas previas.</Text>
-            }
-          /> */}
           <ScrollView horizontal contentContainerStyle={{ alignItems: "center", gap: 10 }}>
 
             {getPreviousAppointments().map((appointment) => (
               renderAppointmentItem({ item: appointment })
             ),)}
-  
+
           </ScrollView>
         </>
       )}
 
-      {/* Botones de Acción */}
-      <TouchableOpacity
-        style={[styles.dentalButton, { backgroundColor: theme.button }]}
-        onPress={() =>
-          router.push({
-            pathname: "/Patient/AI/DentalTips",
-          })
-        }
-      >
-        <Text style={[styles.dentalText, { color: theme.text }]}>Tips Dentales</Text>
-      </TouchableOpacity>
+      <View style={styles.container}>
 
-      <TouchableOpacity
-        style={[styles.addButton, { backgroundColor: theme.button }]}
-        onPress={() => router.push(`/Patient/ProfilePatient?userId=${userId}`)}
-      >
-        <Text style={[styles.addButtonText, { color: theme.text }]}>Perfil</Text>
-      </TouchableOpacity>
+        {/* Tarjeta para Tips Dentales */}
+        <CardWithBackground
+          title="Tips Dentales"
+          imageSource={require("../../assets/images/dentista.png")} // Reemplaza con tu imagen
+          onPress={() =>
+            router.push({
+              pathname: "/Patient/AI/DentalTips",
+            })
+          }
+        />
 
-      <TouchableOpacity
-        style={[styles.addButton, { backgroundColor: theme.button }]}
-        onPress={() => router.push(`/Chat/ChatListScreen?userId=${userId}`)}
-      >
-        <Text style={[styles.addButtonText, { color: theme.text }]}>Ir al Chat</Text>
-      </TouchableOpacity>
+        {/* Tarjeta para Ir al Chat */}
+        <CardWithBackground
+          title="Ir al Chat"
+          imageSource={require("../../assets/images/chat.png")} // Reemplaza con tu imagen
+          onPress={() => router.push(`/Chat/ChatListScreen?userId=${userId}`)}
+        />
 
-      <TouchableOpacity
-        style={[styles.addButton, { backgroundColor: theme.button }]}
-        onPress={() => router.push(`/Patient/Maps/DentisListScreen?userId=${userId}`)}
-      >
-        <Text style={[styles.addButtonText, { color: theme.text }]}>Ir al Mapa</Text>
-      </TouchableOpacity>
+        {/* Tarjeta para Ir al Mapa */}
+        <CardWithBackground
+          title="Ir al Mapa"
+          imageSource={require("../../assets/images/mapa.png")} // Reemplaza con tu imagen
+          onPress={() => router.push(`/Patient/Maps/DentisListScreen?userId=${userId}`)}
+        />
 
-     
+        {/* Tarjeta para Gestionar Citas */}
+        <CardWithBackground
+          title="Ir a la Gestión de Citas"
+          imageSource={require("../../assets/images/chequeo-dental.png")} // Reemplaza con tu imagen
+          onPress={() => router.push(`/Patient/Maps/DentisListScreen?userId=${userId}`)}
+        />
 
-     
+        <TouchableOpacity
+          style={[styles.addButton, { backgroundColor: theme.button }]}
+          onPress={() => router.push(`/Patient/ProfilePatient?userId=${userId}`)}
+        >
+          <Text style={[styles.addButtonText, { color: theme.text }]}>Perfil</Text>
+        </TouchableOpacity>
+
+      </View>
     </ScrollView>
   );
 };
@@ -395,12 +402,57 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   gradientOverlay: {
-  position: "absolute",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-},
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  cardButtomContainer: {
+    marginBottom: 20,
+    borderRadius: 10,
+    overflow: "hidden",
+    elevation: 5, // Sombra en Android
+    shadowColor: "#000", // Sombra en iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  cardButtomBackground: {
+    width: "100%",
+    height: 150,
+    justifyContent: "flex-end",
+    alignItems: "center",
+  },
+  imageButtomStyle: {
+    resizeMode: "cover",
+  },
+  CardgradientOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  cardButtomTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  Cardcontainer: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: "#F9F9F9",
+  },
+  imageStyle: {
+    resizeMode: "cover",
+    width: 150, // Ancho fijo en píxeles
+    height: 110, // Alto fijo en píxeles
+    position: "relative",
+    top: 0,
+  },
 });
 
 export default MenuPatient;
