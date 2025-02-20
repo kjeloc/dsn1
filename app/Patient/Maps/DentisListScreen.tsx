@@ -102,7 +102,7 @@ export default function DentistListScreen() {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.dentistCard}
-            onPress={() => router.push(`/MapScreen?dentistEmail=${item.email}`)} // Navegar al mapa con el correo del odontólogo
+            onPress={() => router.push(`/Patient/Maps/MapScreen?dentistEmail=${item.email}`)} // Navegar al mapa con el correo del odontólogo
           >
             <Text style={styles.dentistName}>{item.name}</Text>
             <Text style={styles.dentistEmail}>{item.email}</Text>

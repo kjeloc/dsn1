@@ -155,7 +155,7 @@ const MenuDentist: React.FC = () => {
             style={styles.qrButton}
             onPress={() =>
               router.push({
-                pathname: "/QRScannerScreen",
+                pathname: "/Dentist/QRScannerScreen",
                 params: { appointments: JSON.stringify(appointments) },
               })
             }
@@ -166,7 +166,7 @@ const MenuDentist: React.FC = () => {
           {/* Botón para Agregar Cita */}
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => router.push(`/addAppointment?userId=${userId}`)}
+            onPress={() => router.push(`/Dentist/Appointment/addAppointment?userId=${userId}`)}
           >
             <Text style={styles.addButtonText}>Agregar Cita</Text>
           </TouchableOpacity>
@@ -174,17 +174,17 @@ const MenuDentist: React.FC = () => {
           {/* Botón para Perfil */}
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => router.push(`/ProfileDentist?userId=${userId}`)}
+            onPress={() => router.push(`/Dentist/ProfileDentist?userId=${userId}`)}
           >
             <Text style={styles.addButtonText}>Perfil</Text>
           </TouchableOpacity>
 
           {/* Botón para Crear Foro */}
-    <TouchableOpacity style={styles.addButton} onPress={() => router.push(`/CreateForum?userId=${userId}`)}>
+    <TouchableOpacity style={styles.addButton} onPress={() => router.push(`/Dentist/Forum/CreateForum?userId=${userId}`)}>
       <Text style={styles.addButtonText}>Crear Foro</Text>
     </TouchableOpacity>
 
-    <TouchableOpacity style={styles.addButton} onPress={() => router.push(`/ListaForos?userId=${userId}`)}>
+    <TouchableOpacity style={styles.addButton} onPress={() => router.push(`/Dentist/Forum/ListaForos?userId=${userId}`)}>
       <Text style={styles.addButtonText}>Ver Foros</Text>
     </TouchableOpacity>
 
@@ -192,13 +192,13 @@ const MenuDentist: React.FC = () => {
           {/* Botón para Ir al Chat */}
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => router.push(`/ChatListScreen?userId=${userId}`)}
+            onPress={() => router.push(`/Chat/ChatListScreen?userId=${userId}`)}
           >
             <Text style={styles.addButtonText}>Ir al Chat</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => router.push(`/CreateWorkgroup?dentistEmail=${dentistEmail}`)}
+            onPress={() => router.push(`/Dentist/WorkGroup/CreateWorkgroup?dentistEmail=${dentistEmail}`)}
           >
           {/* <TouchableOpacity
             style={styles.addButton}
@@ -209,7 +209,7 @@ const MenuDentist: React.FC = () => {
 
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => router.push(`/ViewWorkgroupsScreen?dentistEmail=${dentistEmail}&userId=${userId}`)}
+            onPress={() => router.push(`/Dentist/WorkGroup/ViewWorkgroupsScreen?dentistEmail=${dentistEmail}&userId=${userId}`)}
           >
             <Text style={styles.addButtonText}>Ver Grupos de Trabajo</Text>
           </TouchableOpacity>
@@ -234,7 +234,7 @@ const MenuDentist: React.FC = () => {
           style={styles.appointmentCard}
           onPress={() =>
             router.push({
-              pathname: "/ViewAppointmentDentist",
+              pathname: "/Dentist/Appointment/ViewAppointmentDentist",
               params: { appointment: JSON.stringify(item) },
             })
           }

@@ -113,7 +113,7 @@ const MenuPatient: React.FC = () => {
       style={styles.appointmentCard}
       onPress={() =>
         router.push({
-          pathname: "/ViewAppointmentPatient",
+          pathname: "/Patient/Apointment/ViewAppointmentPatient",
           params: { appointment: JSON.stringify(item) },
         })
       }
@@ -163,7 +163,7 @@ const MenuPatient: React.FC = () => {
         style={styles.dentalButton}
         onPress={() =>
           router.push({
-            pathname: "/DentalTips",
+            pathname: "/Patient/AI/DentalTips",
           })
         }
       >
@@ -171,7 +171,7 @@ const MenuPatient: React.FC = () => {
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => router.push(`/ProfilePatient?userId=${userId}`)}
+        onPress={() => router.push(`/Patient/ProfilePatient?userId=${userId}`)}
       >
         <Text style={styles.addButtonText}>Perfil</Text>
       </TouchableOpacity>
@@ -179,13 +179,13 @@ const MenuPatient: React.FC = () => {
       {/* Botón para Ir al Chat */}
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => router.push(`/ChatListScreen?userId=${userId}`)}
+        onPress={() => router.push(`/Chat/ChatListScreen?userId=${userId}`)}
       >
         <Text style={styles.addButtonText}>Ir al Chat</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => router.push(`/DentisListScreen?userId=${userId}`)}
+        onPress={() => router.push(`/Patient/Maps/DentisListScreen?userId=${userId}`)}
       >
         <Text style={styles.addButtonText}>Ir al Mapa</Text>
       </TouchableOpacity>

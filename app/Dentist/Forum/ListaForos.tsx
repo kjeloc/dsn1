@@ -49,7 +49,7 @@ const ListaForos: React.FC = () => {
 
   const handleVerForo = (id: string) => {
     router.push({
-      pathname: "/VistaForos",
+      pathname: "/Dentist/Forum/VistaForos",
       params: {
         userId: userId, // agrega el parámetro userId
         id: id          // agrega el parámetro id

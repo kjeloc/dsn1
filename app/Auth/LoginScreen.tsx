@@ -1,13 +1,13 @@
-
-import { useState,useEffect} from "react";
-import { View, TextInput, Button, StyleSheet, Text, Alert, Platform, TouchableOpacity } from "react-native";
+// screens/LoginScreen.tsx
+import { useState, useEffect } from "react";
+import { View, TextInput, Button, StyleSheet, Text, Alert, TouchableOpacity } from "react-native";
 import { collection, getDocs, query, where, doc, updateDoc } from "firebase/firestore";
 import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
 import dayjs from "dayjs";
-import { useTheme } from "../ThemeContext"; // Importar el hook para cambiar el tema
-import { db } from "../../config/firebaseConfig";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useAppTheme } from "../Constants/Colors"; // Importar los colores dinámicos
+import { db } from "../../config/firebaseConfig";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -23,7 +23,7 @@ const LoginScreen = () => {
   const [isLoading, setIsLoading] = useState(false); // Estado para bloquear los campos
   const router = useRouter();
   const { userId } = useLocalSearchParams();
-  const { theme, toggleTheme } = useTheme(); // Obtener el tema y la función para alternar
+  const theme = useAppTheme(); // Obtener el tema dinámico
 
   useEffect(() => {
     const requestNotificationPermissions = async () => {
@@ -108,11 +108,11 @@ const LoginScreen = () => {
       const appointmentCount = await countAppointmentsForToday(userDoc.id);
       await scheduleNotification(appointmentCount);
       if (userData.rol === "Admin") {
-        router.push("/menuAdmin");
+        router.push("/Admin/menuAdmin");
       } else if (userData.rol === "Dentist") {
-        router.push(`/menuDentist?userId=${userDoc.id}`);
+        router.push(`/Dentist/menuDentist?userId=${userDoc.id}`);
       } else if (userData.rol === "Patient") {
-        router.push(`/menuPatient?userId=${userDoc.id}`);
+        router.push(`/Patient/menuPatient?userId=${userDoc.id}`);
       } else {
         Alert.alert("Error", "Rol no válido");
       }
@@ -125,20 +125,20 @@ const LoginScreen = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Botón de Cambio de Tema */}
-      <TouchableOpacity onPress={toggleTheme} style={styles.themeButton}>
+      <TouchableOpacity onPress={() => {}} style={styles.themeButton}>
         <Text style={styles.themeButtonText}>T</Text>
       </TouchableOpacity>
 
-      <Text style={[styles.title, { color: theme.colors.text }]}>Iniciar Sesión</Text>
+      <Text style={[styles.title, { color: theme.text }]}>Iniciar Sesión</Text>
       <TextInput
         style={[
           styles.input,
-          { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+          { backgroundColor: theme.card, borderColor: theme.border, color: theme.text },
         ]}
         placeholder="Correo electrónico"
-        placeholderTextColor={theme.colors.secondary}
+        placeholderTextColor={theme.secondary}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -148,17 +148,20 @@ const LoginScreen = () => {
       <TextInput
         style={[
           styles.input,
-          { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+          { backgroundColor: theme.card, borderColor: theme.border, color: theme.text },
         ]}
         placeholder="Contraseña"
-        placeholderTextColor={theme.colors.secondary}
+        placeholderTextColor={theme.secondary}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
         editable={!isLoading} // Deshabilitar cuando isLoading es true
       />
       <TouchableOpacity
-        style={[styles.button, { opacity: isLoading ? 0.5 : 1 }]} // Reducir opacidad cuando isLoading es true
+        style={[
+          styles.button,
+          { backgroundColor: theme.button, opacity: isLoading ? 0.5 : 1 },
+        ]}
         onPress={handleLogin}
         disabled={isLoading} // Deshabilitar el botón cuando isLoading es true
       >
@@ -190,7 +193,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   button: {
-    backgroundColor: "#007BFF",
     padding: 15,
     borderRadius: 8,
     alignItems: "center",

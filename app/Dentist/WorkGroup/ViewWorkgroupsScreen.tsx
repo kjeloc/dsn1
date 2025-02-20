@@ -44,11 +44,11 @@ const ViewWorkgroupsScreen: React.FC = () => {
   }, [dentistEmail]);
 
   const handleViewGroup = (groupId: string) => {
-    router.push(`/ViewWorkgroupDetails?groupId=${groupId}`);
+    router.push(`/Dentist/WorkGroup/ViewWorkgroupDetails?groupId=${groupId}`);
   };
 
   const handleViewGroupChats = (groupId: string) => {
-    router.push(`/GroupChatScreen?groupId=${groupId}&userId=${userId}`);
+    router.push(`/Dentist/WorkGroup/GroupChatScreen?groupId=${groupId}&userId=${userId}`);
   };
   if (loading) {
     return (

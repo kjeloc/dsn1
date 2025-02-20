@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { ScrollView, View, Text, TextInput, Button } from "react-native";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { API_CLIMA } from "../../../config/apiConfig";
+import { API_AI } from "../../../config/apiConfig";
 const DentalCareTips = () => {
   const [topic, setTopic] = useState(""); // Tema ingresado por el usuario
   const [response, setResponse] = useState(""); // Respuesta de la API
   const [loading, setLoading] = useState(false); // Estado de carga
 
   // Inicializa el cliente de la API con tu clave
-  const genAI = new GoogleGenerativeAI(API_CLIMA);
+  const genAI = new GoogleGenerativeAI(API_AI);
 
   const fetchDentalTips = async () => {
     if (!topic) return;
@@ -19,7 +19,7 @@ const DentalCareTips = () => {
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       // Define el prompt para obtener consejos odontológicos
-      const prompt = `Dame consejos detallados y prácticos sobre cuidados odontológicos, específicamente sobre: ${topic}`;
+      const prompt = `Dame consejos detallados y prácticos sobre cuidados odontológicos enfocados en: ${topic}. Si el tema no está relacionado con odontología, indícame que reformule mi pregunta.`;
 
       // Genera el contenido con el modelo
       const result = await model.generateContent(prompt);

@@ -173,7 +173,7 @@ const ChatListScreen: React.FC = () => {
       if (!querySnapshot.empty) {
         // Si ya existe un chat, navegar directamente a él
         const existingChat = querySnapshot.docs[0];
-        router.push(`/ChatScreen?chatId=${existingChat.id}&userId=${participant1Id}`);
+        router.push(`/Chat/ChatScreen?chatId=${existingChat.id}&userId=${participant1Id}`);
         return;
       }
 
@@ -195,7 +195,7 @@ const ChatListScreen: React.FC = () => {
       ]);
 
       // Navegar al chat recién creado
-      router.push(`/ChatScreen?chatId=${chatId}&userId=${participant1Id}`);
+      router.push(`/Chat/ChatScreen?chatId=${chatId}&userId=${participant1Id}`);
     } catch (error) {
       if (error instanceof Error) {
         console.error("Error al crear chat:", error.message);
@@ -254,7 +254,7 @@ const ChatListScreen: React.FC = () => {
             <TouchableOpacity
               style={styles.chatItem}
               onPress={() =>
-                router.push(`/ChatScreen?chatId=${item.id}&userId=${userId}`)
+                router.push(`/Chat/ChatScreen?chatId=${item.id}&userId=${userId}`)
               }
             >
               <Text style={styles.chatName}>{otherParticipantEmail}</Text>
