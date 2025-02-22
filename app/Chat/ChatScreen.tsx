@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView,} from "react-native";
 import { db } from "../../config/firebaseConfig";
-import { collection,  query, orderBy, onSnapshot, addDoc, serverTimestamp, Timestamp,} from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, Timestamp, updateDoc, doc } from "firebase/firestore";
 import { useLocalSearchParams } from "expo-router";
 import { Message } from "../utils/types";
 
@@ -40,24 +40,34 @@ const ChatScreen: React.FC = () => {
   }, [chatId]);
 
   // Enviar un nuevo mensaje
-  const sendMessage = async () => {
-    if (!newMessage.trim()) return;
+// Enviar un nuevo mensaje
+const sendMessage = async () => {
+  if (!newMessage.trim()) return;
 
-    try {
-      const messagesRef = collection(db, "chats", chatId, "messages");
+  try {
+    const messagesRef = collection(db, "chats", chatId, "messages");
+    const newMessageData = {
+      text: newMessage,
+      senderId: userId,
+      // senderEmail: userEmail, // Usa el correo electrónico si lo prefieres
+      timestamp: serverTimestamp(), // Usar serverTimestamp para sincronización
+    };
 
-      await addDoc(messagesRef, {
-        text: newMessage,
-        senderId: userId,
-        senderEmail: userId, // Aquí puedes usar el correo si lo prefieres
-        timestamp: serverTimestamp(), // Usar serverTimestamp para sincronización
-      });
+    // Guardar el mensaje en la subcolección "messages"
+    await addDoc(messagesRef, newMessageData);
 
-      setNewMessage(""); // Limpiar el campo de texto
-    } catch (error) {
-      console.error("Error al enviar mensaje:", error);
-    }
-  };
+    // Actualizar el documento del chat con el último mensaje
+    await updateDoc(doc(db, "chats", chatId), {
+      lastMessage: newMessage,
+      lastMessageTimestamp: serverTimestamp(),
+      lastMessageSenderId: userId,
+    });
+
+    setNewMessage(""); // Limpiar el campo de texto
+  } catch (error) {
+    console.error("Error al enviar mensaje:", error);
+  }
+};
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding">

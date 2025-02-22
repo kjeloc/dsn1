@@ -150,4 +150,14 @@ export interface UserData {
   age?: number; // Edad (opcional)
   profilePicture?: string; // URL de la imagen de perfil (opcional)
 }
+
+
+export interface Chat {
+  id: string;
+  participants: string[];
+  participantsEmail: string[];
+  otherParticipantName?: string; // Nombre del otro participante (opcional)
+  lastMessage?: string; // Último mensaje (opcional)
+  lastMessageTime?: string; // Hora del último mensaje (opcional)
+}
 export default {};
