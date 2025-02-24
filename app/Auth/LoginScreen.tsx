@@ -1,6 +1,16 @@
 // screens/LoginScreen.tsx
 import { useState, useEffect } from "react";
-import { View, TextInput, Button, StyleSheet, Text, Alert, TouchableOpacity } from "react-native";
+import {
+  View,
+  TextInput,
+  Button,
+  StyleSheet,
+  Text,
+  Alert,
+  TouchableOpacity,
+  Image,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons"; // Para íconos
 import { collection, getDocs, query, where, doc, updateDoc } from "firebase/firestore";
 import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
@@ -71,7 +81,9 @@ const LoginScreen = () => {
   const countAppointmentsForToday = async (userId: string) => {
     try {
       const today = dayjs().format("YYYY-MM-DD");
-      const appointmentsSnapshot = await getDocs(collection(db, "userTest", userId, "appointments"));
+      const appointmentsSnapshot = await getDocs(
+        collection(db, "userTest", userId, "appointments")
+      );
       const todaysAppointments = appointmentsSnapshot.docs.filter((doc) => {
         const appointment = doc.data();
         return appointment.date === today;
@@ -88,7 +100,6 @@ const LoginScreen = () => {
       Alert.alert("Error", "Por favor, completa todos los campos.");
       return;
     }
-
     setIsLoading(true); // Bloquear los campos
     try {
       const usersRef = collection(db, "userTest");
@@ -126,8 +137,11 @@ const LoginScreen = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Botón de Cambio de Tema */}
-      <Text style={[styles.title, { color: theme.text }]}>Iniciar Sesión</Text>
+      {/* Título Elegante */}
+      <Text style={[styles.title, { color: theme.text }]}>DENTAL SOCIAL NETWORK</Text>
+
+      <Image source={require("../../assets/images/salud-dental.png")} style={[styles.logo, { width: 80, height: 80 }]} />
+      {/* Campo de Correo Electrónico */}
       <TextInput
         style={[
           styles.input,
@@ -141,6 +155,8 @@ const LoginScreen = () => {
         keyboardType="email-address"
         editable={!isLoading} // Deshabilitar cuando isLoading es true
       />
+
+      {/* Campo de Contraseña */}
       <TextInput
         style={[
           styles.input,
@@ -153,6 +169,8 @@ const LoginScreen = () => {
         secureTextEntry
         editable={!isLoading} // Deshabilitar cuando isLoading es true
       />
+
+      {/* Botón de Iniciar Sesión */}
       <TouchableOpacity
         style={[
           styles.button,
@@ -162,6 +180,21 @@ const LoginScreen = () => {
         disabled={isLoading} // Deshabilitar el botón cuando isLoading es true
       >
         <Text style={styles.buttonText}>{isLoading ? "Iniciando..." : "Iniciar Sesión"}</Text>
+      </TouchableOpacity>
+
+      {/* Botón de Crear Cuenta */}
+      <TouchableOpacity
+        style={styles.createAccountButton}
+        onPress={() => router.push("/Auth/registerUser")} // Navegar a la pantalla de registro
+      >
+        <Text style={styles.createAccountButtonText}>Crear Cuenta para Paciente</Text>
+      </TouchableOpacity>
+      {/* Botón de Crear Cuenta */}
+      <TouchableOpacity
+        style={styles.createAccountButton}
+        onPress={() => router.push("/Auth/registerDentist")} // Navegar a la pantalla de registro
+      >
+        <Text style={styles.createAccountButtonText}>Crear Cuenta para Dentista</Text>
       </TouchableOpacity>
     </View>
   );
@@ -175,9 +208,13 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
+    fontWeight: "bold",
     marginBottom: 20,
-    fontWeight: "600",
+    textAlign: "center",
+  },
+  logo: {
+    marginBottom: 40,
   },
   input: {
     height: 50,
@@ -199,19 +236,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  themeButton: {
-    position: "absolute",
-    top: 20,
-    right: 20,
-    width: 40,
-    height: 40,
-    backgroundColor: "#E0E0E0",
+  createAccountButton: {
+    marginTop: 20,
+    padding: 10,
     borderRadius: 8,
-    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#ccc",
     alignItems: "center",
+    width: "100%",
   },
-  themeButtonText: {
-    fontSize: 20,
+  createAccountButtonText: {
+    color: "#007BFF",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 
