@@ -1,4 +1,3 @@
-// MenuDentist.tsx
 import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
@@ -11,11 +10,13 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient"; // Para el degradado
 import { Ionicons } from "@expo/vector-icons";
+import { db } from "../../config/firebaseConfig";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import dayjs from "dayjs";
-import { fetchAppointments, fetchDentistData } from "../utils/firebaseService";
 import { useColorScheme } from "react-native";
 import { useAppTheme } from "../Constants/Colors"; 
+import { fetchAppointments, fetchDentistData } from "../utils/firebaseService";
 
 const MenuDentist: React.FC = () => {
   interface Appointment {
@@ -31,10 +32,19 @@ const MenuDentist: React.FC = () => {
   const [dentistName, setDentistName] = useState<string | null>(null);
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [mostrarCalendario, setMostrarCalendario] = useState(true);
+  const [dentistEmail, setDentistEmail] = useState("");
+  const [profilePicture, setProfilePicture] = useState<string | null>(null); // Foto de perfil
   const router = useRouter();
-  const { userId } = useLocalSearchParams<{ userId: string }>();
-  const toggleCalendario = () => setMostrarCalendario(!mostrarCalendario);
-  
+  const { userId } = useLocalSearchParams() as { userId: string };
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+
+  // Colores dinámicos para modo claro/oscuro
+  const backgroundColor = isDark ? "#000000" : "#FFFFFF";
+  const textColor = isDark ? "#FFFFFF" : "#222222";
+  const cardBackgroundColor = isDark ? "#1E1E1E" : "#FFFFFF";
+  const buttonBackgroundColor = isDark ? "#9959E8a3" : "#007BFF";
+  const borderColor = isDark ? "#333333" : "#CCCCCC";
 
   // Cargar citas del odontólogo
   const fetchAppointmentsData = useCallback(async () => {
@@ -438,34 +448,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     width: "13%",
     alignItems: "center",
-    borderRadius: 8,
-    margin: 2,
   },
   calendarText: {
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  button: {
-    backgroundColor: "#007BFF",
-    padding: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  buttonText: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  toggleButton: {
-    backgroundColor: "#007BFF",
-    padding: 10,
-    borderRadius: 8,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  toggleButtonText: {
-    color: "#FFF",
     fontSize: 16,
     fontWeight: "600",
   },
