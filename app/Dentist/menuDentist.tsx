@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Image,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient"; // Para el degradado
 import { Ionicons } from "@expo/vector-icons";
@@ -152,6 +153,26 @@ const MenuDentist: React.FC = () => {
     );
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      "Cerrar Sesión",
+      "¿Estás seguro de que deseas cerrar sesión?",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Aceptar",
+          onPress: () => {
+            // Aquí puedes implementar la lógica para cerrar sesión (por ejemplo, limpiar tokens o navegar al inicio).
+            router.replace("/");
+          },
+        },
+      ]
+    );
+  };
+
   const getUpcomingAppointments = () => {
     const today = dayjs();
     const nextSunday = today.endOf("week").add(7, "day");
@@ -216,6 +237,23 @@ const MenuDentist: React.FC = () => {
                 Ir al perfil
               </Text>
             </TouchableOpacity>
+                    {/* Botón de Logout */}
+        <TouchableOpacity
+          style={[
+            styles.logoutButton,
+            { backgroundColor: colorScheme === "dark" ? "#FF4D4D" : "#FF4D4D" },
+          ]}
+          onPress={handleLogout}
+        >
+          <Text
+            style={[
+              styles.logoutButtonText,
+              { color: colorScheme === "dark" ? "#FFFFFF" : "#FFFFFF" },
+            ]}
+          >
+            Cerrar Sesión
+          </Text>
+        </TouchableOpacity>
           </View>
         </View>
       </LinearGradient>
@@ -482,6 +520,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 18,
     marginVertical: 20,
+  },
+  logoutButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: "#007BFF",
+    borderRadius: 5,
+    alignSelf: "flex-start",
+    marginTop: 5,
+  },
+  logoutButtonText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
 });
 

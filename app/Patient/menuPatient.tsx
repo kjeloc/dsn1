@@ -18,10 +18,11 @@ const MenuPatient: React.FC = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
+  const theme = useAppTheme(); // Obtener el tema dinámico
+  const buttonBackgroundColor = theme.mode === "dark" ? "#9959E8a3" : "#007BFF";
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [showPreviousAppointments, setShowPreviousAppointments] = useState(false);
   const router = useRouter();
-  const theme = useAppTheme(); // Obtener el tema dinámico
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -154,6 +155,27 @@ const MenuPatient: React.FC = () => {
   };
 
 
+  const handleLogout = () => {
+    Alert.alert(
+      "Cerrar Sesión",
+      "¿Estás seguro de que deseas cerrar sesión?",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Aceptar",
+          onPress: () => {
+            // Aquí puedes implementar la lógica para cerrar sesión (por ejemplo, limpiar tokens o navegar al inicio).
+            router.replace("/");
+          },
+        },
+      ]
+    );
+  };
+
+
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}>
 
@@ -174,6 +196,33 @@ const MenuPatient: React.FC = () => {
             style={styles.profileImage}
           />
         </View>
+            <TouchableOpacity
+              style={[styles.profileButton, { backgroundColor: buttonBackgroundColor }]}
+              onPress={() => router.push(`/Patient/ProfilePatient?userId=${userId}`)}
+            >
+              <Text style={[styles.profileButtonText]}>
+                Ir al perfil
+              </Text>
+            </TouchableOpacity>
+             {/* Botón de Logout */}
+        <TouchableOpacity
+          style={[
+            styles.logoutButton,
+            { backgroundColor: theme.mode === "dark" ? "#FF4D4D" : "#FF4D4D" },
+          ]}
+          onPress={handleLogout}
+        >
+          <Text
+            style={[
+              styles.logoutButtonText,
+              { color: theme.mode === "dark" ? "#FFFFFF" : "#FFFFFF" },
+            ]}
+          >
+            Cerrar Sesión
+          </Text>
+        </TouchableOpacity>
+
+
       </View>
       {/* Predicción del Clima */}
       <View style={styles.weatherSection}>
@@ -256,12 +305,7 @@ const MenuPatient: React.FC = () => {
           onPress={() => router.push(`/Patient/Maps/DentisListScreen?userId=${userId}`)}
         />
 
-        <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: theme.button }]}
-          onPress={() => router.push(`/Patient/ProfilePatient?userId=${userId}`)}
-        >
-          <Text style={[styles.addButtonText, { color: theme.text }]}>Perfil</Text>
-        </TouchableOpacity>
+
 
       </View>
     </ScrollView>
@@ -452,6 +496,33 @@ const styles = StyleSheet.create({
     height: 110, // Alto fijo en píxeles
     position: "relative",
     top: 0,
+  },
+  profileButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: "#007BFF",
+    borderRadius: 5,
+    alignSelf: "center",
+    marginTop: 5,
+  },
+  profileButtonText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+
+  logoutButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: "#007BFF",
+    borderRadius: 5,
+    alignSelf: "center",
+    marginTop: 5,
+  },
+  logoutButtonText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
 });
 
