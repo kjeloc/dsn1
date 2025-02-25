@@ -3,14 +3,14 @@ import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { getDistance } from "geolib";
-import { db } from "../../../config/firebaseConfig";
 import { useLocalSearchParams } from "expo-router";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { fetchDentistLocationAndName } from "../../utils/firebaseService";
 
-export default function MapScreen() {
+
+const MapScreen: React.FC = () => {
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [dentistLocation, setDentistLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [dentistName, setDentistName] = useState<string | null>(null); // Nuevo estado para el nombre del odontólogo
+  const [dentistName, setDentistName] = useState<string | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const { dentistEmail } = useLocalSearchParams<{ dentistEmail: string }>();
@@ -34,37 +34,16 @@ export default function MapScreen() {
     }
   };
 
-  // Obtener la ubicación y el nombre del odontólogo desde Firestore
-  const getDentistLocation = async () => {
+  // Cargar la ubicación y el nombre del odontólogo desde Firebase
+  const loadDentistData = async () => {
     try {
-      if (!dentistEmail) {
-        throw new Error("No se proporcionó el correo del odontólogo");
+      const dentistData = await fetchDentistLocationAndName(dentistEmail);
+      if (dentistData) {
+        setDentistLocation(dentistData.location);
+        setDentistName(dentistData.name);
       }
-
-      const q = query(collection(db, "userTest"), where("email", "==", dentistEmail));
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        throw new Error(`El odontólogo ${dentistEmail} no existe`);
-      }
-
-      const dentistDoc = querySnapshot.docs[0];
-      const dentistData = dentistDoc.data();
-      const { AcPos, name } = dentistData;
-
-      if (!AcPos || !AcPos.latitude || !AcPos.longitude) {
-        throw new Error("La ubicación del odontólogo no está definida");
-      }
-
-      setDentistLocation({
-        latitude: AcPos.latitude,
-        longitude: AcPos.longitude,
-      });
-
-      // Guardar el nombre del odontólogo
-      setDentistName(name || "Odontólogo desconocido");
     } catch (error) {
-      console.error("Error al obtener la ubicación del odontólogo:", error);
+      console.error("Error al cargar los datos del odontólogo:", error);
     }
   };
 
@@ -81,7 +60,7 @@ export default function MapScreen() {
 
   useEffect(() => {
     getUserLocation(); // Obtener la ubicación del usuario
-    getDentistLocation(); // Obtener la ubicación y el nombre del odontólogo
+    loadDentistData(); // Obtener la ubicación y el nombre del odontólogo
   }, []);
 
   useEffect(() => {
@@ -110,15 +89,13 @@ export default function MapScreen() {
           >
             {/* Marcador de la ubicación del usuario */}
             <Marker coordinate={userLocation} title="Tu ubicación" pinColor="blue" />
-
             {/* Marcador de la ubicación del odontólogo */}
             <Marker
               coordinate={dentistLocation}
-              title={dentistName || "Odontólogo"} // Usar el nombre del odontólogo aquí
+              title={dentistName || "Odontólogo"}
               pinColor="red"
             />
           </MapView>
-
           {/* Mostrar distancia */}
           <View style={styles.distanceContainer}>
             <Text style={styles.distanceText}>
@@ -131,7 +108,7 @@ export default function MapScreen() {
       )}
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {

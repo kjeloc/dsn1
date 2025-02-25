@@ -1,16 +1,11 @@
 import React, { useEffect, useState } from "react";
 import {  View, Text, StyleSheet, ScrollView, ActivityIndicator,
 TouchableOpacity, Image, Alert, Modal, Pressable,} from "react-native";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useLocalSearchParams } from "expo-router";
-import { db } from "../../config/firebaseConfig";
 import * as ImagePicker from "expo-image-picker";
-import axios from "axios";
-import * as ImageManipulator from "expo-image-manipulator";
 import { Ionicons } from "@expo/vector-icons";
 import { PatientData } from "../utils/types";
-
-const IMGUR_CLIENT_ID = "64c190c058b9f98";
+import { fetchPatientData, updatePatientProfilePicture, uploadImageToImgur, } from "../utils/firebaseService";
 
 const ProfilePatient: React.FC = () => {
   const { userId } = useLocalSearchParams();
@@ -18,33 +13,23 @@ const ProfilePatient: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
-  const [imageSelected, setImageSelected] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false); // Para mostrar el modal
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
-    const fetchPatientData = async () => {
+    const loadPatientData = async () => {
       if (!userId) return;
       try {
-        const userDoc = await getDoc(doc(db, "userTest", userId as string));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          console.log("Datos del paciente:", data); // Depuración
-          if (!data) {
-            console.error("Los datos del paciente son undefined");
-            return;
-          }
-          setPatientData(data as PatientData);
-        } else {
-          console.error("El documento del paciente no existe");
-        }
+        const data = await fetchPatientData(userId as string);
+        setPatientData(data as PatientData);
       } catch (error) {
-        console.error("Error al obtener los datos del paciente:", error);
+        console.error("Error al cargar los datos del paciente:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchPatientData();
+
+    loadPatientData();
   }, [userId]);
 
   const pickImage = async () => {
@@ -55,8 +40,7 @@ const ProfilePatient: React.FC = () => {
 
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
-      setImageSelected(true);
-      setModalVisible(true); // Mostrar el modal cuando se seleccione una imagen
+      setModalVisible(true);
     }
   };
 
@@ -68,27 +52,12 @@ const ProfilePatient: React.FC = () => {
 
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
-      setImageSelected(true);
-      setModalVisible(true); // Mostrar el modal cuando se tome una foto
+      setModalVisible(true);
     }
   };
 
-  const resizeImage = async (uri: string) => {
-    try {
-      const manipResult = await ImageManipulator.manipulateAsync(
-        uri,
-        [{ resize: { width: 800 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      return manipResult.uri;
-    } catch (error) {
-      console.error("Error redimensionando la imagen:", error);
-      return uri;
-    }
-  };
-
-  const uploadToImgur = async () => {
-    if (!selectedImage) {
+  const handleUploadImage = async () => {
+    if (!selectedImage || !userId) {
       Alert.alert("Error", "Por favor selecciona una imagen primero");
       return;
     }
@@ -96,45 +65,16 @@ const ProfilePatient: React.FC = () => {
     setIsUploading(true);
 
     try {
-      const resizedImageUri = await resizeImage(selectedImage);
+      const imageUrl = await uploadImageToImgur(selectedImage);
+      await updatePatientProfilePicture(userId as string, imageUrl);
 
-      const formData = new FormData();
-      formData.append("image", {
-        uri: resizedImageUri,
-        type: "image/jpeg",
-        name: "profile.jpg",
-      } as any);
-
-      const response = await axios.post(
-        "https://api.imgur.com/3/image",
-        formData,
-        {
-          headers: {
-            Authorization: `Client-ID ${IMGUR_CLIENT_ID}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
+      setUploadedImageUrl(imageUrl);
+      setPatientData((prev) =>
+        prev ? { ...prev, profilePicture: imageUrl } : null
       );
 
-      if (response.data.success) {
-        const imageUrl = response.data.data.link;
-
-        if (!userId) return;
-        const userRef = doc(db, "userTest", userId as string);
-        await updateDoc(userRef, {
-          profilePicture: imageUrl,
-        });
-
-        setUploadedImageUrl(imageUrl);
-        setPatientData((prev) =>
-          prev ? { ...prev, profilePicture: imageUrl } : null
-        );
-
-        Alert.alert("Éxito", "Imagen subida y guardada correctamente");
-        setModalVisible(false); // Cerrar el modal después de subir la imagen
-      } else {
-        Alert.alert("Error", "No se pudo subir la imagen");
-      }
+      Alert.alert("Éxito", "Imagen subida y guardada correctamente");
+      setModalVisible(false);
     } catch (error) {
       console.error("Error:", error);
       Alert.alert("Error", "Ocurrió un error durante el proceso");
@@ -162,6 +102,7 @@ const ProfilePatient: React.FC = () => {
   return (
     <ScrollView contentContainerStyle={styles.scrollViewContainer}>
       <Text style={styles.title}>Perfil del Paciente</Text>
+
       {/* Imagen de perfil */}
       <View style={styles.profileImageContainer}>
         <Image
@@ -169,40 +110,35 @@ const ProfilePatient: React.FC = () => {
           style={styles.profileImage}
           resizeMode="cover"
         />
-        {/* Botón de lápiz encima de la imagen */}
         <TouchableOpacity
           style={styles.editButton}
-          onPress={() => setModalVisible(true)} // Muestra el modal directamente al editar
+          onPress={() => setModalVisible(true)}
         >
           <Ionicons name="pencil-outline" size={25} color="white" />
         </TouchableOpacity>
       </View>
 
-      {/* Nombre */}
+      {/* Información del paciente */}
       <View style={styles.infoSection}>
         <Text style={styles.label}>Nombre:</Text>
         <Text style={styles.value}>{patientData.name}</Text>
       </View>
 
-      {/* Correo Electrónico */}
       <View style={styles.infoSection}>
         <Text style={styles.label}>Correo Electrónico:</Text>
         <Text style={styles.value}>{patientData.email}</Text>
       </View>
 
-      {/* Fecha de Nacimiento */}
       <View style={styles.infoSection}>
         <Text style={styles.label}>Fecha de Nacimiento:</Text>
         <Text style={styles.value}>{patientData.birthdate}</Text>
       </View>
 
-      {/* Edad */}
       <View style={styles.infoSection}>
         <Text style={styles.label}>Edad:</Text>
         <Text style={styles.value}>{patientData.age || "No especificada"}</Text>
       </View>
 
-      {/* Citas Programadas */}
       <View style={styles.infoSection}>
         <Text style={styles.label}>Citas Programadas:</Text>
         {patientData?.appointments?.length > 0 ? (
@@ -215,7 +151,8 @@ const ProfilePatient: React.FC = () => {
           <Text style={styles.value}>No hay citas programadas.</Text>
         )}
       </View>
-      {/* Modal con la previsualización y el botón de carga */}
+
+      {/* Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -231,22 +168,16 @@ const ProfilePatient: React.FC = () => {
               resizeMode="contain"
             />
             <View style={styles.buttonsContainer}>
-              <TouchableOpacity
-                style={styles.cameraButton}
-                onPress={takePhoto}
-              >
+              <TouchableOpacity style={styles.cameraButton} onPress={takePhoto}>
                 <Text style={styles.buttonText}>Tomar Foto</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.cameraButton}
-                onPress={pickImage}
-              >
+              <TouchableOpacity style={styles.cameraButton} onPress={pickImage}>
                 <Text style={styles.buttonText}>Escoger Foto</Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity
               style={styles.uploadButton}
-              onPress={uploadToImgur}
+              onPress={handleUploadImage}
               disabled={isUploading}
             >
               {isUploading ? (

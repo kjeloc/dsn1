@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { db } from '../../../config/firebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { fetchWorkgroupDetails } from "../../utils/firebaseService";
 import { Workgroup } from "../../utils/types";
 
 const ViewWorkgroupDetails: React.FC = () => {
@@ -11,29 +10,22 @@ const ViewWorkgroupDetails: React.FC = () => {
   const [workgroup, setWorkgroup] = useState<Workgroup | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Cargar los detalles del grupo de trabajo
   useEffect(() => {
-    const fetchWorkgroup = async () => {
+    const loadWorkgroupDetails = async () => {
       if (!groupId) return;
+
       try {
-        const docRef = doc(db, 'workgroups', groupId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            setWorkgroup({
-                id: docSnap.id,
-                name: docSnap.data().name || '',
-                owner: docSnap.data().owner || '',
-                admins: docSnap.data().admins || [],
-                members: docSnap.data().members || []
-              } as Workgroup);
-        }
+        const workgroupData = await fetchWorkgroupDetails(groupId);
+        setWorkgroup(workgroupData);
       } catch (error) {
-        console.error('Error fetching workgroup details:', error);
+        console.error("Error al cargar los detalles del grupo:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchWorkgroup();
+    loadWorkgroupDetails();
   }, [groupId]);
 
   if (loading) {
@@ -60,9 +52,9 @@ const ViewWorkgroupDetails: React.FC = () => {
       <Text style={styles.label}>Dueño:</Text>
       <Text>{workgroup.owner}</Text>
       <Text style={styles.label}>Administradores:</Text>
-      <Text>{workgroup.admins.join(', ')}</Text>
+      <Text>{workgroup.admins.join(", ")}</Text>
       <Text style={styles.label}>Miembros:</Text>
-      <Text>{workgroup.members.join(', ')}</Text>
+      <Text>{workgroup.members.join(", ")}</Text>
       <TouchableOpacity onPress={() => router.back()}>
         <Text style={styles.backButton}>Volver</Text>
       </TouchableOpacity>

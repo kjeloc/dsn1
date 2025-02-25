@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
-import { db } from '../../../config/firebaseConfig';
-import { collection, getDocs,getDoc, doc, query, where, } from 'firebase/firestore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Workgroup } from "../../utils/types";
+import { fetchUserWorkgroups } from "../../utils/firebaseService";
+
 
 const ViewWorkgroupsScreen: React.FC = () => {
   const router = useRouter();
@@ -12,44 +12,34 @@ const ViewWorkgroupsScreen: React.FC = () => {
   const [workgroups, setWorkgroups] = useState<Workgroup[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Cargar los grupos de trabajo del usuario
   useEffect(() => {
-    const fetchWorkgroups = async () => {
-    
+    const loadWorkgroups = async () => {
+      if (!dentistEmail) return;
+
       try {
-        const userEmail = dentistEmail;
-
-        if (!userEmail) return;
-
-        const q = query(collection(db, 'workgroups'),(where('memberEmails', 'array-contains', userEmail)));
-        const querySnapshot = await getDocs(q);
-        const workgroupsData: Workgroup[] = [];
-        querySnapshot.forEach((doc) => {
-          workgroupsData.push({
-            id: doc.id,
-            name: doc.data().groupName || '',
-            owner: doc.data().ownerEmail || '',
-            admins: doc.data().adminEmails || [],
-            members: doc.data().memberEmails || []
-          } as Workgroup);
-        });
+        const workgroupsData = await fetchUserWorkgroups(dentistEmail);
         setWorkgroups(workgroupsData);
       } catch (error) {
-        console.error('Error fetching workgroups:', error);
+        console.error("Error al cargar los grupos de trabajo:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchWorkgroups();
+    loadWorkgroups();
   }, [dentistEmail]);
 
+  // Manejar la navegación para ver los detalles del grupo
   const handleViewGroup = (groupId: string) => {
-    router.push(`/ViewWorkgroupDetails?groupId=${groupId}`);
+    router.push(`./ViewWorkgroupDetails?groupId=${groupId}`);
   };
 
+  // Manejar la navegación para ver el chat del grupo
   const handleViewGroupChats = (groupId: string) => {
-    router.push(`/GroupChatScreen?groupId=${groupId}&userId=${userId}`);
+    router.push(`./GroupChatScreen?groupId=${groupId}&userId=${userId}`);
   };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -77,8 +67,8 @@ const ViewWorkgroupsScreen: React.FC = () => {
             <View style={styles.workgroupItem}>
               <Text style={styles.workgroupName}>{item.name}</Text>
               <Text>Dueño: {item.owner}</Text>
-              <Text>Administradores: {item.admins.join(', ')}</Text>
-              <Text>Miembros: {item.members.join(', ')}</Text>
+              <Text>Administradores: {item.admins.join(", ")}</Text>
+              <Text>Miembros: {item.members.join(", ")}</Text>
             </View>
           </TouchableOpacity>
         )}

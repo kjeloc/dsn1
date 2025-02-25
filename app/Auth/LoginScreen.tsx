@@ -108,11 +108,11 @@ const LoginScreen = () => {
       const appointmentCount = await countAppointmentsForToday(userDoc.id);
       await scheduleNotification(appointmentCount);
       if (userData.rol === "Admin") {
-        router.push("/menuAdmin");
+        router.push("/Admin/menuAdmin");
       } else if (userData.rol === "Dentist") {
-        router.push(`/menuDentist?userId=${userDoc.id}`);
+        router.push(`/Dentist/menuDentist?userId=${userDoc.id}`);
       } else if (userData.rol === "Patient") {
-        router.push(`/menuPatient?userId=${userDoc.id}`);
+        router.push(`/Patient/menuPatient?userId=${userDoc.id}`);
       } else {
         Alert.alert("Error", "Rol no válido");
       }

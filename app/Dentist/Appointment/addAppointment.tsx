@@ -1,13 +1,14 @@
+// AddAppointment.tsx
 import React, { useEffect, useState } from "react";
 import { ScrollView, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform } from "react-native";
 import { useForm, Controller } from "react-hook-form";
-import { db } from "../../../config/firebaseConfig";
-import { collection, addDoc, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import { DatePicker } from "antd"; // Import DatePicker from Ant Design for web support
-import { Appointment } from "../../utils/types";
+import { Appointment} from "../../utils/types";
+import { fetchDentistData, findPatientByEmail, addAppointmentForDentist,
+   addAppointmentForPatient,} from "../../utils/firebaseService";
 
 const AddAppointment: React.FC = () => {
   const { userId } = useLocalSearchParams();
@@ -24,22 +25,21 @@ const AddAppointment: React.FC = () => {
   ];
 
   useEffect(() => {
-    const fetchDentistData = async () => {
+    const fetchDentistInfo = async () => {
       if (!userId) return;
       try {
-        const userDoc = await getDoc(doc(db, "userTest", userId as string));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          setDentalOffices(data?.dental_office || []);
-          setPatients(data?.patients || []);
-          setDentistEmail(data?.email || "");
+        const data = await fetchDentistData(userId as string);
+        if (data) {
+          setDentalOffices(data.dental_office || []);
+          setPatients(data.patients || []);
+          setDentistEmail(data.email || "");
         }
       } catch (error) {
-        console.error("Error al obtener datos del dentista:", error);
+        console.error("Error al obtener los datos del dentista:", error);
       }
     };
 
-    fetchDentistData();
+    fetchDentistInfo();
   }, [userId]);
 
   const onDateChange = (event: any, selectedDate?: Date) => {
@@ -56,37 +56,26 @@ const AddAppointment: React.FC = () => {
 
     try {
       // 1. Buscar el ID del paciente basado en su correo electrónico
-      const patientsQuery = await getDocs(
-        query(collection(db, "userTest"), where("email", "==", data.patientEmail))
-      );
-
-      if (patientsQuery.empty) {
+      const patient = await findPatientByEmail(data.patientEmail);
+      if (!patient) {
         Alert.alert("Error", "No se encontró al paciente con el correo proporcionado.");
         return;
       }
 
-      const patientDoc = patientsQuery.docs[0];
-      const patientId = patientDoc.id;
+      const appointmentData = {
+        patientEmail: data.patientEmail,
+        date: date.toISOString().split("T")[0],
+        hour: hour,
+        reason: data.reason,
+        dentalOffice: data.dentalOffice,
+        dentistEmail: dentistEmail,
+      };
 
       // 2. Guardar la cita en la subcolección del dentista
-      await addDoc(collection(db, "userTest", userId as string, "appointments"), {
-        patientEmail: data.patientEmail,
-        date: date.toISOString().split("T")[0],
-        hour: hour,
-        reason: data.reason,
-        dentalOffice: data.dentalOffice,
-        dentistEmail: dentistEmail,
-      });
+      await addAppointmentForDentist(userId as string, appointmentData);
 
       // 3. Guardar la cita en la subcolección del paciente
-      await addDoc(collection(db, "userTest", patientId, "appointments"), {
-        patientEmail: data.patientEmail,
-        date: date.toISOString().split("T")[0],
-        hour: hour,
-        reason: data.reason,
-        dentalOffice: data.dentalOffice,
-        dentistEmail: dentistEmail,
-      });
+      await addAppointmentForPatient(patient.id, appointmentData);
 
       reset();
       Alert.alert("Cita agregada", "La cita se ha guardado correctamente.");

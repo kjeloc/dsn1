@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
-import { db } from "../../config/firebaseConfig";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import axios from "axios";
 import * as Location from "expo-location";
 import dayjs from "dayjs";
 import { API_CLIMA } from "../../config/apiConfig";
 import { Appointment,UserData,WeatherData } from "../utils/types";
+import { fetchUserData, fetchUserAppointments } from "../utils/firebaseService";
 const API_KEY = API_CLIMA;
 
 const MenuPatient: React.FC = () => {
@@ -19,40 +18,21 @@ const MenuPatient: React.FC = () => {
   const [showPreviousAppointments, setShowPreviousAppointments] = useState(false);
   const router = useRouter();
 
+  // Cargar datos del usuario, citas y clima
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchData = async () => {
       if (!userId) return;
-      try {
-        const userDoc = await getDoc(doc(db, "userTest", userId as string));
-        if (userDoc.exists()) {
-          setUserData(userDoc.data() as UserData);
-        }
-      } catch (error) {
-        console.error("Error al obtener los datos del usuario:", error);
-      }
-    };
 
-    const fetchAppointments = async () => {
-      if (!userId) return;
       try {
-        const querySnapshot = await getDocs(collection(db, "userTest", userId as string, "appointments"));
-        const appointmentList: Appointment[] = [];
-        querySnapshot.forEach((doc) => {
-          appointmentList.push({
-            id: doc.id,
-            ...doc.data(),
-          } as Appointment);
-        });
-        setAppointments(appointmentList);
-      } catch (error) {
-        console.error("Error al obtener las citas:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+        // Obtener datos del usuario
+        const userData = await fetchUserData(userId as string);
+        setUserData(userData);
 
-    const fetchWeatherData = async () => {
-      try {
+        // Obtener citas del usuario
+        const appointmentsData = await fetchUserAppointments(userId as string);
+        setAppointments(appointmentsData);
+
+        // Obtener datos del clima
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted") {
           Alert.alert("Permiso denegado", "Se requiere acceso a la ubicación.");
@@ -61,7 +41,6 @@ const MenuPatient: React.FC = () => {
 
         const location = await Location.getCurrentPositionAsync({});
         const { latitude, longitude } = location.coords;
-
         const response = await axios.get(
           `https://api.openweathermap.org/data/2.5/weather`,
           {
@@ -73,19 +52,18 @@ const MenuPatient: React.FC = () => {
             },
           }
         );
-
         setWeather(response.data);
       } catch (error) {
-        console.error("Error al obtener el clima:", error);
-        setWeather(null);
+        console.error("Error al cargar datos:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchUserData();
-    fetchAppointments();
-    fetchWeatherData();
+    fetchData();
   }, [userId]);
 
+  // Filtrar citas próximas
   const getUpcomingAppointments = () => {
     const today = dayjs();
     return appointments
@@ -97,23 +75,25 @@ const MenuPatient: React.FC = () => {
       });
   };
 
+  // Filtrar citas previas
   const getPreviousAppointments = () => {
     const today = dayjs();
     return appointments
       .filter((appointment) => dayjs(appointment.date).isBefore(today, "day"))
       .sort((a, b) => {
-        const dateComparison = dayjs(b.date).diff(dayjs(a.date)); // Orden descendente (más reciente primero)
+        const dateComparison = dayjs(b.date).diff(dayjs(a.date)); // Orden descendente
         if (dateComparison !== 0) return dateComparison;
         return dayjs(b.hour, "HH:mm").diff(dayjs(a.hour, "HH:mm"));
       });
   };
 
+  // Renderizar una cita
   const renderAppointmentItem = ({ item }: { item: Appointment }) => (
     <TouchableOpacity
       style={styles.appointmentCard}
       onPress={() =>
         router.push({
-          pathname: "/ViewAppointmentPatient",
+          pathname: "./Apointment/ViewAppointmentPatient",
           params: { appointment: JSON.stringify(item) },
         })
       }
@@ -147,6 +127,7 @@ const MenuPatient: React.FC = () => {
         <Text>No se encontraron datos del usuario.</Text>
       )}
 
+      {/* Predicción del Clima */}
       <View style={styles.weatherSection}>
         <Text style={styles.subtitle}>Predicción del Clima</Text>
         {weather ? (
@@ -159,37 +140,34 @@ const MenuPatient: React.FC = () => {
           <Text style={styles.error}>No hay datos disponibles</Text>
         )}
       </View>
+
+      {/* Botones de Navegación */}
       <TouchableOpacity
         style={styles.dentalButton}
-        onPress={() =>
-          router.push({
-            pathname: "/DentalTips",
-          })
-        }
+        onPress={() => router.push("./AI/DentalTips")}
       >
         <Text style={styles.dentalText}>Tips Dentales</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => router.push(`/ProfilePatient?userId=${userId}`)}
+        onPress={() => router.push(`./ProfilePatient?userId=${userId}`)}
       >
         <Text style={styles.addButtonText}>Perfil</Text>
       </TouchableOpacity>
-
-      {/* Botón para Ir al Chat */}
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => router.push(`/ChatListScreen?userId=${userId}`)}
+        onPress={() => router.push(`../Chat/ChatListScreen?userId=${userId}`)}
       >
         <Text style={styles.addButtonText}>Ir al Chat</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => router.push(`/DentisListScreen?userId=${userId}`)}
+        onPress={() => router.push(`./Maps/DentisListScreen?userId=${userId}`)}
       >
         <Text style={styles.addButtonText}>Ir al Mapa</Text>
       </TouchableOpacity>
 
+      {/* Próximas Citas */}
       <Text style={styles.subtitle}>Próximas Citas</Text>
       <FlatList
         data={getUpcomingAppointments()}
@@ -200,6 +178,7 @@ const MenuPatient: React.FC = () => {
         }
       />
 
+      {/* Botón para mostrar/ocultar citas previas */}
       <TouchableOpacity
         style={styles.button}
         onPress={() => setShowPreviousAppointments(!showPreviousAppointments)}
@@ -209,6 +188,7 @@ const MenuPatient: React.FC = () => {
         </Text>
       </TouchableOpacity>
 
+      {/* Citas Previas */}
       {showPreviousAppointments && (
         <>
           <Text style={styles.subtitle}>Citas Previas</Text>

@@ -1,9 +1,9 @@
+// MenuDentist.tsx
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity,} from "react-native";
-import { db } from "../../config/firebaseConfig";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import dayjs from "dayjs";
+import { fetchAppointments, fetchDentistData } from "../utils/firebaseService";
 import { Appointment } from "../utils/types";
 
 const MenuDentist: React.FC = () => {
@@ -11,53 +11,40 @@ const MenuDentist: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [dentistName, setDentistName] = useState<string | null>(null);
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  const [mostrarCalendario, setMostrarCalendario] = useState(true);
   const router = useRouter();
   const { userId } = useLocalSearchParams<{ userId: string }>();
-  const [mostrarCalendario, setMostrarCalendario] = useState(true);
   const toggleCalendario = () => setMostrarCalendario(!mostrarCalendario);
-  const [dentistEmail, setDentistEmail] = useState<string>("");
 
   // Cargar citas del odontólogo
-  const fetchAppointments = useCallback(async () => {
+  const fetchAppointmentsData = useCallback(async () => {
     if (!userId) return;
     try {
-      const querySnapshot = await getDocs(
-        collection(db, "userTest", userId, "appointments")
-      );
-      const appointmentList: Appointment[] = [];
-      querySnapshot.forEach((doc) => {
-        appointmentList.push({
-          id: doc.id,
-          ...doc.data(),
-        } as Appointment);
-      });
+      const appointmentList = await fetchAppointments(userId);
       setAppointments(appointmentList);
     } catch (error) {
-      console.error("Error al obtener las citas:", error);
+      console.error("Error al cargar las citas:", error);
     } finally {
       setLoading(false);
     }
   }, [userId]);
 
   // Cargar datos del odontólogo
-  const fetchDentistData = useCallback(async () => {
+  const fetchDentistInfo = useCallback(async () => {
     if (!userId) return;
     try {
-      const userDoc = await getDoc(doc(db, "userTest", userId));
-      if (userDoc.exists()) {
-        setDentistName(userDoc.data()?.name || "Menu Dentista");
-        setDentistEmail(userDoc.data()?.email || "");
-      }
+      const dentistData = await fetchDentistData(userId);
+      setDentistName(dentistData?.name || "Menú Dentista");
     } catch (error) {
-      console.error("Error al obtener el nombre del dentista:", error);
+      console.error("Error al cargar los datos del dentista:", error);
     }
   }, [userId]);
 
   useFocusEffect(
     useCallback(() => {
-      fetchDentistData();
-      fetchAppointments();
-    }, [fetchDentistData, fetchAppointments])
+      fetchDentistInfo();
+      fetchAppointmentsData();
+    }, [fetchDentistInfo, fetchAppointmentsData])
   );
 
   const handleDayPress = (day: string) => {
@@ -144,115 +131,101 @@ const MenuDentist: React.FC = () => {
   }
 
   return (
-    <FlatList
-      ListHeaderComponent={
-        <>
-          {dentistName && (
-            <Text style={styles.title}>Bienvenido, {dentistName}</Text>
-          )}
-          {/* Botón para ir a QRScannerScreen */}
+    <View style={styles.container}>
+      {/* Título */}
+      <Text style={styles.title}>Bienvenido, {dentistName}</Text>
+
+      {/* Botones de navegación */}
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push("./QRScannerScreen")}
+      >
+        <Text style={styles.buttonText}>Escanear QR</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push(`./Appointment/addAppointment?userId=${userId}`)}
+      >
+        <Text style={styles.buttonText}>Agregar Cita</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push(`./ProfileDentist?userId=${userId}`)}
+      >
+        <Text style={styles.buttonText}>Perfil</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push(`./Forum/CreateForum?userId=${userId}`)}
+      >
+        <Text style={styles.buttonText}>Crear Foro</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push(`./Forum/ListaForos?userId=${userId}`)}
+      >
+        <Text style={styles.buttonText}>Ver Foros</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push(`../Chat/ChatListScreen?userId=${userId}`)}
+      >
+        <Text style={styles.buttonText}>Ir al Chat</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push(`./Workgroup/CreateWorkgroup?dentistEmail=${dentistName}`)}
+      >
+        <Text style={styles.buttonText}>Crear Grupo de Trabajo</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push(`./Workgroup/ViewWorkgroupsScreen?dentistEmail=${dentistName}&userId=${userId}`)}
+      >
+        <Text style={styles.buttonText}>Ver Grupos de Trabajo</Text>
+      </TouchableOpacity>
+
+      {/* Calendario */}
+      <TouchableOpacity style={styles.toggleButton} onPress={toggleCalendario}>
+        <Text style={styles.toggleButtonText}>
+          {mostrarCalendario ? "Ocultar Calendario" : "Mostrar Calendario"}
+        </Text>
+      </TouchableOpacity>
+      {mostrarCalendario && renderCalendar()}
+
+      {/* Citas */}
+      <Text style={styles.subtitle}>
+        {selectedDays.length === 0 ? "Próximas citas" : "Citas Agendadas"}
+      </Text>
+      <FlatList
+        data={filteredAppointments}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
           <TouchableOpacity
-            style={styles.qrButton}
+            style={styles.appointmentCard}
             onPress={() =>
               router.push({
-                pathname: "/QRScannerScreen",
-                params: { appointments: JSON.stringify(appointments) },
+                pathname: "./Appointment/ViewAppointmentDentist",
+                params: { appointment: JSON.stringify(item) },
               })
             }
           >
-            <Text style={styles.qrButtonText}>Escanear QR</Text>
+            <Text style={styles.appointmentText}>Paciente: {item.patientEmail}</Text>
+            <Text style={styles.appointmentText}>Fecha: {item.date}</Text>
+            <Text style={styles.appointmentText}>Hora: {item.hour}</Text>
+            <Text style={styles.appointmentText}>Motivo: {item.reason}</Text>
           </TouchableOpacity>
-
-          {/* Botón para Agregar Cita */}
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => router.push(`/addAppointment?userId=${userId}`)}
-          >
-            <Text style={styles.addButtonText}>Agregar Cita</Text>
-          </TouchableOpacity>
-
-          {/* Botón para Perfil */}
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => router.push(`/ProfileDentist?userId=${userId}`)}
-          >
-            <Text style={styles.addButtonText}>Perfil</Text>
-          </TouchableOpacity>
-
-          {/* Botón para Crear Foro */}
-    <TouchableOpacity style={styles.addButton} onPress={() => router.push(`/CreateForum?userId=${userId}`)}>
-      <Text style={styles.addButtonText}>Crear Foro</Text>
-    </TouchableOpacity>
-
-    <TouchableOpacity style={styles.addButton} onPress={() => router.push(`/ListaForos?userId=${userId}`)}>
-      <Text style={styles.addButtonText}>Ver Foros</Text>
-    </TouchableOpacity>
-
-
-          {/* Botón para Ir al Chat */}
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => router.push(`/ChatListScreen?userId=${userId}`)}
-          >
-            <Text style={styles.addButtonText}>Ir al Chat</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => router.push(`/CreateWorkgroup?dentistEmail=${dentistEmail}`)}
-          >
-          {/* <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => router.push(`/CreateWorkgroupScreen?dentistEmail=${dentistEmail}`)}
-          > */}
-            <Text style={styles.addButtonText}>Crear Grupo de Trabajo</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => router.push(`/ViewWorkgroupsScreen?dentistEmail=${dentistEmail}&userId=${userId}`)}
-          >
-            <Text style={styles.addButtonText}>Ver Grupos de Trabajo</Text>
-          </TouchableOpacity>
-          {/* Calendario */}
-          <TouchableOpacity onPress={toggleCalendario}>
-            <Text style={styles.subtitle}>
-              {mostrarCalendario ? "Ocultar Calendario" : "Mostrar Calendario"}
-            </Text>
-          </TouchableOpacity>
-          {mostrarCalendario && renderCalendar()}
-
-          {/* Subtítulo */}
-          <Text style={styles.subtitle}>
-            {selectedDays.length === 0 ? "Próximas citas" : "Citas Agendadas"}
-          </Text>
-        </>
-      }
-      data={filteredAppointments}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          style={styles.appointmentCard}
-          onPress={() =>
-            router.push({
-              pathname: "/ViewAppointmentDentist",
-              params: { appointment: JSON.stringify(item) },
-            })
-          }
-        >
-          <Text style={styles.appointmentText}>
-            Paciente: {item.patientEmail}
-          </Text>
-          <Text style={styles.appointmentText}>Fecha: {item.date}</Text>
-          <Text style={styles.appointmentText}>Hora: {item.hour}</Text>
-          <Text style={styles.appointmentText}>Motivo: {item.reason}</Text>
-        </TouchableOpacity>
-      )}
-      ListEmptyComponent={
-        <Text style={styles.emptyText}>
-          No hay citas para los días seleccionados.
-        </Text>
-      }
-    />
+        )}
+        ListEmptyComponent={<Text style={styles.emptyText}>No hay citas disponibles.</Text>}
+      />
+    </View>
   );
 };
 
@@ -285,55 +258,62 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   calendarButton: {
-    padding: 10,
-    margin: 2,
-    borderRadius: 4,
-    width: "13%",
+    width: "14%",
+    aspectRatio: 1,
+    justifyContent: "center",
     alignItems: "center",
+    borderRadius: 8,
+    margin: 2,
   },
   calendarText: {
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  button: {
+    backgroundColor: "#007BFF",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  buttonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  toggleButton: {
+    backgroundColor: "#007BFF",
+    padding: 10,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  toggleButtonText: {
+    color: "#FFF",
     fontSize: 16,
     fontWeight: "bold",
   },
   appointmentCard: {
-    backgroundColor: "#E0F7FA",
     padding: 15,
-    borderRadius: 8,
     marginBottom: 10,
+    borderRadius: 8,
+    backgroundColor: "#E0F7FA",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
   },
   appointmentText: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#333",
+    marginBottom: 5,
   },
   emptyText: {
     textAlign: "center",
     fontSize: 16,
     color: "#666",
     marginVertical: 20,
-  },
-  addButton: {
-    backgroundColor: "#007BFF",
-    padding: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  addButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  qrButton: {
-    backgroundColor: "#007BFF",
-    padding: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  qrButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "bold",
   },
 });
 

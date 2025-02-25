@@ -26,7 +26,7 @@ export interface User {
     name: string;
     rol: "Dentist" | "Patient"; // Cambiado de 'role' a 'rol'
     patients?: string[]; // Solo para odontólogos
-    dentist?: string;    // Solo para pacientes
+    dentist?: string[];    // Solo para pacientes
     email: string;       // Campo adicional
     id: string;          // Campo adicional
     profilePicture?: string; // Campo opcional

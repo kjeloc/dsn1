@@ -2,46 +2,44 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, FlatList, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard
 } from 'react-native';
-import { db } from "../../../config/firebaseConfig";
-import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
+import { fetchDentists, createWorkgroup,} from "../../utils/firebaseService";
 import { useLocalSearchParams } from 'expo-router';
 import { WorkgroupFormData } from "../../utils/types";
 
 const CreateWorkgroupScreen: React.FC = () => {
   const { dentistEmail } = useLocalSearchParams<{ dentistEmail: string }>();
-  const [searchAdmin, setSearchAdmin] = useState('');
-  const [searchMember, setSearchMember] = useState('');
+  const [searchAdmin, setSearchAdmin] = useState("");
+  const [searchMember, setSearchMember] = useState("");
   const [filteredAdmins, setFilteredAdmins] = useState<string[]>([]);
   const [filteredMembers, setFilteredMembers] = useState<string[]>([]);
   const [availableDentists, setAvailableDentists] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [formData, setFormData] = useState<WorkgroupFormData>({
-    groupName: '',
+    groupName: "",
     ownerEmail: dentistEmail,
     adminEmails: [dentistEmail], // El dueño es automáticamente administrador
     memberEmails: [dentistEmail], // El dueño es automáticamente miembro
   });
 
+  // Cargar odontólogos disponibles
   useEffect(() => {
-    const fetchDentists = async () => {
+    const loadDentists = async () => {
       try {
-        const q = query(collection(db, 'userTest'), where('rol', '==', 'Dentist'));
-        const querySnapshot = await getDocs(q);
-        const userList: string[] = querySnapshot.docs.map(doc => doc.data().email);
-        setAvailableDentists(userList);
-        setFilteredMembers(userList);
-        setFilteredAdmins(userList);
+        const dentists = await fetchDentists();
+        setAvailableDentists(dentists);
+        setFilteredMembers(dentists);
+        setFilteredAdmins(dentists);
       } catch (error) {
-        console.error('Error fetching dentists:', error);
+        console.error("Error al cargar odontólogos:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDentists();
+    loadDentists();
   }, []);
 
+  // Manejar cambios en el formulario
   const handleInputChange = (field: keyof WorkgroupFormData, value: string | string[]) => {
     setFormData({
       ...formData,
@@ -49,31 +47,30 @@ const CreateWorkgroupScreen: React.FC = () => {
     });
   };
 
-  const addEmailToArray = (field: 'adminEmails' | 'memberEmails', email: string) => {
-    if (field === 'adminEmails') {
+  // Agregar un correo a una lista (admin o miembro)
+  const addEmailToArray = (field: "adminEmails" | "memberEmails", email: string) => {
+    if (field === "adminEmails") {
       // Solo agregar como admin si ya es miembro
       if (!formData.memberEmails.includes(email)) {
-        alert('Para ser administrador, primero debe ser miembro.');
+        alert("Para ser administrador, primero debe ser miembro.");
         return;
       }
     }
-
     if (!formData[field].includes(email)) {
       handleInputChange(field, [...formData[field], email]);
     }
   };
 
-  const removeEmailFromArray = (field: 'adminEmails' | 'memberEmails', email: string) => {
+  // Remover un correo de una lista (admin o miembro)
+  const removeEmailFromArray = (field: "adminEmails" | "memberEmails", email: string) => {
     if (email === dentistEmail) {
-      alert('No puedes remover al dueño del grupo.');
+      alert("No puedes remover al dueño del grupo.");
       return;
     }
-
-    if (field === 'memberEmails') {
+    if (field === "memberEmails") {
       // Si removemos a un miembro, también se debe eliminar de administradores
-      const updatedMembers = formData.memberEmails.filter(e => e !== email);
-      const updatedAdmins = formData.adminEmails.filter(e => e !== email);
-
+      const updatedMembers = formData.memberEmails.filter((e) => e !== email);
+      const updatedAdmins = formData.adminEmails.filter((e) => e !== email);
       setFormData({
         ...formData,
         memberEmails: updatedMembers,
@@ -81,16 +78,35 @@ const CreateWorkgroupScreen: React.FC = () => {
       });
     } else {
       // Remover de administradores sin afectar miembros
-      handleInputChange(field, formData[field].filter(e => e !== email));
+      handleInputChange(field, formData[field].filter((e) => e !== email));
     }
   };
 
+  // Filtrar correos según la búsqueda
+  useEffect(() => {
+    setFilteredMembers(
+      availableDentists.filter((email) =>
+        email.toLowerCase().includes(searchMember.toLowerCase())
+      )
+    );
+  }, [searchMember]);
+
+  useEffect(() => {
+    setFilteredAdmins(
+      availableDentists.filter((email) =>
+        email.toLowerCase().includes(searchAdmin.toLowerCase())
+      )
+    );
+  }, [searchAdmin]);
+
+  // Enviar el formulario para crear el grupo
   const handleSubmit = async () => {
     try {
-      const newWorkgroupRef = await addDoc(collection(db, 'workgroups'), formData);
-      console.log('Workgroup added with ID: ', newWorkgroupRef.id);
+      await createWorkgroup(formData);
+      alert("Grupo de trabajo creado exitosamente.");
     } catch (error) {
-      console.error('Error adding workgroup: ', error);
+      console.error("Error al crear el grupo:", error);
+      alert("Ocurrió un error al crear el grupo. Por favor, intenta nuevamente.");
     }
   };
 

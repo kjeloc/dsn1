@@ -1,45 +1,33 @@
   import React, { useEffect, useState } from "react";
   import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, } from "react-native";
-  import { db } from "../../config/firebaseConfig";
-  import { collection, getDocs } from "firebase/firestore";
   import { UserAdmin } from "../utils/types";
-
+  import { fetchUsers } from "../utils/firebaseService";
   const MenuAdmin: React.FC = () => {
-    const [UserAdmins, setUserAdmins] = useState<UserAdmin[]>([]);
+    const [Users, setUsers] = useState<UserAdmin[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filteredUserAdmins, setFilteredUserAdmins] = useState<UserAdmin[]>([]);
+    const [filteredUsers, setFilteredUsers] = useState<UserAdmin[]>([]);
 
     useEffect(() => {
-      const fetchUserAdmins = async () => {
+      const loadUsers = async () => {
         try {
-          const querySnapshot = await getDocs(collection(db, "UserAdminTest"));
-          const UserAdminList: UserAdmin[] = [];
-          querySnapshot.forEach((doc) => {
-            const UserAdminData = doc.data();
-            UserAdminList.push({
-              id: doc.id,
-              name: UserAdminData.name,
-              email: UserAdminData.email,
-              rol: UserAdminData.rol,
-            });
-          });
-          setUserAdmins(UserAdminList);
-          setFilteredUserAdmins(UserAdminList);
+          const userList = await fetchUsers();
+          setUsers(userList);
+          setFilteredUsers(userList);
         } catch (error) {
-          console.error("Error al obtener los usuarios:", error);
+          console.error("Error al cargar los usuarios:", error);
         } finally {
           setLoading(false);
         }
       };
-
-      fetchUserAdmins();
+  
+      loadUsers();
     }, []);
 
-    const filterUserAdminsByRole = (role: string) => {
+    const filterUsersByRole = (role: string) => {
       if (role === "all") {
-        setFilteredUserAdmins(UserAdmins);
+        setFilteredUsers(Users);
       } else {
-        setFilteredUserAdmins(UserAdmins.filter((UserAdmin) => UserAdmin.rol === role));
+        setFilteredUsers(Users.filter((UserAdmin) => UserAdmin.rol === role));
       }
     };
 
@@ -72,25 +60,25 @@
       <View style={styles.filterContainer}>
         <TouchableOpacity
           style={styles.filterButton}
-          onPress={() => filterUserAdminsByRole("all")}
+          onPress={() => filterUsersByRole("all")}
         >
           <Text style={styles.filterText}>Todos</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.filterButton}
-          onPress={() => filterUserAdminsByRole("Admin")}
+          onPress={() => filterUsersByRole("Admin")}
         >
           <Text style={styles.filterText}>Administradores</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.filterButton}
-          onPress={() => filterUserAdminsByRole("Dentist")}
+          onPress={() => filterUsersByRole("Dentist")}
         >
           <Text style={styles.filterText}>Dentistas</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.filterButton}
-          onPress={() => filterUserAdminsByRole("Patient")}
+          onPress={() => filterUsersByRole("Patient")}
         >
           <Text style={styles.filterText}>Pacientes</Text>
         </TouchableOpacity>
@@ -98,11 +86,11 @@
 
       {/* Lista de Usuarios */}
       <ScrollView>
-        {filteredUserAdmins.map((UserAdmin) => (
-          <View key={UserAdmin.id} style={[styles.UserAdminCard, getCardStyle(UserAdmin.rol)]}>
-            <Text style={styles.UserAdminName}>{UserAdmin.name}</Text>
-            <Text style={styles.UserAdminEmail}>{UserAdmin.email}</Text>
-            <Text style={styles.UserAdminRole}>{UserAdmin.rol}</Text>
+        {filteredUsers.map((UserAdmin) => (
+          <View key={UserAdmin.id} style={[styles.UserCard, getCardStyle(UserAdmin.rol)]}>
+            <Text style={styles.UserName}>{UserAdmin.name}</Text>
+            <Text style={styles.UserEmail}>{UserAdmin.email}</Text>
+            <Text style={styles.UserRole}>{UserAdmin.rol}</Text>
           </View>
         ))}
       </ScrollView>
@@ -141,7 +129,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "bold",
   },
-  UserAdminCard: {
+  UserCard: {
     padding: 15,
     borderRadius: 8,
     marginBottom: 10,
@@ -158,15 +146,15 @@ const styles = StyleSheet.create({
   defaultCard: {
     backgroundColor: "#FFFFFF",
   },
-  UserAdminName: {
+  UserName: {
     fontSize: 18,
     fontWeight: "bold",
   },
-  UserAdminEmail: {
+  UserEmail: {
     fontSize: 14,
     color: "#555555",
   },
-  UserAdminRole: {
+  UserRole: {
     fontSize: 14,
     fontStyle: "italic",
   },

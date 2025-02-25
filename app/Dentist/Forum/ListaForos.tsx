@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { FlatList, Text, View, TextInput, StyleSheet, TouchableOpacity } from "react-native";
-import { db } from "../../../config/firebaseConfig";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { FlatList, Text, View, TextInput, StyleSheet, TouchableOpacity,ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Picker } from "@react-native-picker/picker";
 import { Forum } from "../../utils/types";
+import { fetchForums } from "../../utils/firebaseService";
 
 const ListaForos: React.FC = () => {
   const { userId } = useLocalSearchParams();
@@ -14,23 +13,22 @@ const ListaForos: React.FC = () => {
   const [categoriaFilter, setCategoriaFilter] = useState("");
   const [tipoFilter, setTipoFilter] = useState("");
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchForos = async () => {
+    const loadForos = async () => {
       try {
-        const q = collection(db, "forums");
-        const querySnapshot = await getDocs(q);
-        const forosData: Forum[] = [];
-        querySnapshot.forEach((doc) => {
-          forosData.push({ id: doc.id, ...doc.data() } as Forum);
-        });
-        setForos(forosData);
-        setFilteredForos(forosData);
+        const forumsData = await fetchForums();
+        setForos(forumsData);
+        setFilteredForos(forumsData);
       } catch (error) {
-        console.error("Error al obtener foros:", error);
+        console.error("Error al cargar los foros:", error);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchForos();
+
+    loadForos();
   }, []);
 
   useEffect(() => {
@@ -49,7 +47,7 @@ const ListaForos: React.FC = () => {
 
   const handleVerForo = (id: string) => {
     router.push({
-      pathname: "/VistaForos",
+      pathname: "./VistaForos",
       params: {
         userId: userId, // agrega el parámetro userId
         id: id          // agrega el parámetro id
@@ -57,6 +55,13 @@ const ListaForos: React.FC = () => {
     });
   };
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007BFF" />
+      </View>
+    );
+  }
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Lista de Foros</Text>
@@ -125,6 +130,11 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: "#F9F9F9",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   title: {
     fontSize: 24,

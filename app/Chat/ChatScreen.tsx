@@ -1,38 +1,26 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView,} from "react-native";
-import { db } from "../../config/firebaseConfig";
-import { collection,  query, orderBy, onSnapshot, addDoc, serverTimestamp, Timestamp,} from "firebase/firestore";
 import { useLocalSearchParams } from "expo-router";
 import { Message } from "../utils/types";
+import { subscribeToChatMessages, sendMessageToChat} from "../utils/firebaseService";
 
 const ChatScreen: React.FC = () => {
   const { chatId, userId } = useLocalSearchParams<{ chatId: string; userId: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
 
+  // Validar que chatId y userId estén definidos
+  if (!chatId || !userId) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Error: chatId o userId no están definidos</Text>
+      </View>
+    );
+  }
+
   // Cargar mensajes del chat en tiempo real
   useEffect(() => {
-    if (!chatId) return;
-
-    const messagesRef = collection(db, "chats", chatId, "messages");
-    const q = query(messagesRef, orderBy("timestamp", "asc"));
-
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const messagesData: Message[] = querySnapshot.docs.map((doc) => {
-        const data = doc.data();
-        const timestamp = data.timestamp;
-
-        // Convertir Timestamp a Date si es necesario
-        const convertedTimestamp =
-          timestamp instanceof Timestamp ? timestamp.toDate() : timestamp;
-
-        return {
-          id: doc.id,
-          ...data,
-          timestamp: convertedTimestamp, // Usar la fecha convertida
-        };
-      }) as Message[];
-
+    const unsubscribe = subscribeToChatMessages(chatId, (messagesData) => {
       setMessages(messagesData);
     });
 
@@ -40,19 +28,11 @@ const ChatScreen: React.FC = () => {
   }, [chatId]);
 
   // Enviar un nuevo mensaje
-  const sendMessage = async () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
 
     try {
-      const messagesRef = collection(db, "chats", chatId, "messages");
-
-      await addDoc(messagesRef, {
-        text: newMessage,
-        senderId: userId,
-        senderEmail: userId, // Aquí puedes usar el correo si lo prefieres
-        timestamp: serverTimestamp(), // Usar serverTimestamp para sincronización
-      });
-
+      await sendMessageToChat(chatId, userId, newMessage);
       setNewMessage(""); // Limpiar el campo de texto
     } catch (error) {
       console.error("Error al enviar mensaje:", error);
@@ -91,7 +71,7 @@ const ChatScreen: React.FC = () => {
           onChangeText={setNewMessage}
           placeholder="Escribe un mensaje..."
         />
-        <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
+        <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
           <Text style={styles.sendButtonText}>Enviar</Text>
         </TouchableOpacity>
       </View>
@@ -99,10 +79,16 @@ const ChatScreen: React.FC = () => {
   );
 };
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   messagesContainer: {
     flexGrow: 1,

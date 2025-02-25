@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { ScrollView, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { useForm, Controller } from "react-hook-form";
-import { db } from "../../../config/firebaseConfig";
-import { collection, addDoc, doc, getDoc } from "firebase/firestore";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Picker } from "@react-native-picker/picker";
-import dayjs from "dayjs";
 import { Forum } from "../../utils/types";
+import { fetchDentistData,addForumPost} from "../../utils/firebaseService";
 
 const CreateForum: React.FC = () => {
   const { userId } = useLocalSearchParams();
@@ -15,41 +13,39 @@ const CreateForum: React.FC = () => {
   const [authorEmail, setAuthorEmail] = useState("");
 
   useEffect(() => {
-    const fetchDentistData = async () => {
-      if (!userId) return;
-      try {
-        const userDoc = await getDoc(doc(db, "userTest", userId as string));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          setAuthorEmail(data?.email || "");
+      const fetchDentistInfo = async () => {
+        if (!userId) return;
+        try {
+          const data = await fetchDentistData(userId as string);
+          if (data) {
+            setAuthorEmail(data?.email || "");
+          }
+        } catch (error) {
+          console.error("Error al obtener los datos del dentista:", error);
         }
+      };
+  
+      fetchDentistInfo();
+    }, [userId]);
+
+    const onSubmit = async (data: Forum) => {
+      console.log("esto es " + userId);
+      if (!userId) {
+        Alert.alert("Error", "Usuario no identificado. " + userId);
+        return;
+      }
+  
+      try {
+        // Usar la función encapsulada para agregar la publicación
+        await addForumPost(data, authorEmail);
+        reset();
+        Alert.alert("Publicación creada", "La publicación se ha guardado correctamente.");
+        router.back();
       } catch (error) {
-        console.error("Error al obtener datos del dentista:", error);
+        console.error("Error al agregar la publicación:", error);
+        Alert.alert("Error", "No se pudo guardar la publicación. Inténtalo de nuevo.");
       }
     };
-    fetchDentistData();
-  }, [userId]);
-
-  const onSubmit = async (data: Forum) => {
-    console.log("esto es "+ userId);
-    if (!userId) {
-      Alert.alert("Error", "Usuario no identificado. "+ userId);
-      return;
-    }
-    try {
-      await addDoc(collection(db, "forums"), {
-        ...data,
-        date: dayjs().format("YYYY-MM-DD"),
-        author: authorEmail,
-      });
-      reset();
-      Alert.alert("Publicación creada", "La publicación se ha guardado correctamente.");
-      router.back();
-    } catch (error) {
-      console.error("Error al agregar la publicación:", error);
-      Alert.alert("Error", "No se pudo guardar la publicación. Inténtalo de nuevo.");
-    }
-  };
 
   return (
     <ScrollView>

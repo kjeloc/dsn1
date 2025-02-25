@@ -1,119 +1,118 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, FlatList,TextInput, } from "react-native";
-import { db } from "../../../config/firebaseConfig";
-import { doc, getDoc, collection, getDocs,query, where,addDoc } from "firebase/firestore";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Forum,Comment } from "../../utils/types";
+import { fetchForumById, fetchForumComments, addCommentToForum, getUserEmailFromId,} from "../../utils/firebaseService";
+
 
 const VistaForos: React.FC = () => {
-  const { id,userId } = useLocalSearchParams();
-  const router = useRouter();
+  const { id, userId } = useLocalSearchParams<{ id: string; userId: string }>();
   const [foro, setForo] = useState<Forum | null>(null);
   const [comentarios, setComentarios] = useState<Comment[]>([]);
   const [nuevoComentario, setNuevoComentario] = useState("");
   const [authorEmail, setAuthorEmail] = useState("");
 
+  // Cargar datos del foro y del usuario
   useEffect(() => {
-    const fetchForo = async () => {
-      if (!id) return;
-      try {
-        const foroDoc = await getDoc(doc(db, "forums", id as string));
-        if (foroDoc.exists()) {
-          setForo({ id: foroDoc.id, ...foroDoc.data() } as Forum);
-        }
-      } catch (error) {
-        console.error("Error al obtener el foro:", error);
-      }
-    };
-    const fetchDentistData = async () => {
-          if (!userId) return;
-          try {
-            const userDoc = await getDoc(doc(db, "userTest", userId as string));
-            if (userDoc.exists()) {
-              const data = userDoc.data();
-              setAuthorEmail(data?.email || "");
-            }
-          } catch (error) {
-            console.error("Error al obtener datos del dentista:", error);
-          }
-        };
-    fetchDentistData();
-    fetchForo();
-  }, [id,userId]);
+    const loadForumAndUserData = async () => {
+      if (!id || !userId) return;
 
-  useEffect(() => {
-    const fetchComentarios = async () => {
-      if (!id) return;
       try {
-        const q = query(collection(db, "forums", id as string, "comentarios"));
-        const querySnapshot = await getDocs(q);
-        const comentariosData: Comment[] = [];
-        querySnapshot.forEach((doc) => {
-          comentariosData.push({ id: doc.id, ...doc.data() } as Comment);
-        });
-        setComentarios(comentariosData);
+        // Obtener datos del foro
+        const forumData = await fetchForumById(id);
+        setForo(forumData);
+
+        // Obtener el correo del usuario actual
+        const userEmail = await getUserEmailFromId(userId);
+        setAuthorEmail(userEmail || "");
       } catch (error) {
-        console.error("Error al obtener comentarios:", error);
+        console.error("Error al cargar datos:", error);
       }
     };
-    fetchComentarios();
+
+    loadForumAndUserData();
+  }, [id, userId]);
+
+  // Cargar comentarios del foro
+  useEffect(() => {
+    const loadComments = async () => {
+      if (!id) return;
+
+      try {
+        const commentsData = await fetchForumComments(id);
+        setComentarios(commentsData);
+      } catch (error) {
+        console.error("Error al cargar comentarios:", error);
+      }
+    };
+
+    loadComments();
   }, [id]);
 
+  // Agregar un nuevo comentario
   const handleAgregarComentario = async () => {
-    if (!id || !nuevoComentario) return;
+    if (!id || !nuevoComentario.trim()) return;
+
     try {
-      await addDoc(collection(db, "forums", id as string, "comentarios"), {
-        comentador: authorEmail, // Aquí deberías obtener el correo del usuario actual
+      await addCommentToForum(id, {
+        comentador: authorEmail,
         respuesta: nuevoComentario,
       });
+
       setNuevoComentario("");
-      // Recargar comentarios
-      const q = query(collection(db, "forums", id as string, "comentarios"));
-      const querySnapshot = await getDocs(q);
-      const comentariosData: Comment[] = [];
-      querySnapshot.forEach((doc) => {
-        comentariosData.push({ id: doc.id, ...doc.data() } as Comment);
-      });
-      setComentarios(comentariosData);
+
+      // Recargar comentarios después de agregar uno nuevo
+      const updatedComments = await fetchForumComments(id);
+      setComentarios(updatedComments);
     } catch (error) {
       console.error("Error al agregar comentario:", error);
     }
   };
 
+  if (!foro) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Cargando foro...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      {foro && (
-        <>
-          <Text style={styles.title}>{foro.title}</Text>
-          <Text style={styles.info}>
-            Autor: {foro.author} | Categoría: {foro.category} | Tipo: {foro.type} | Fecha: {foro.date}
-          </Text>
-          <Text style={styles.content}>{foro.content}</Text>
+      <Text style={styles.title}>{foro.title}</Text>
+      <Text style={styles.info}>
+        Autor: {foro.author} | Categoría: {foro.category} | Tipo: {foro.type} | Fecha:{" "}
+        {foro.date}
+      </Text>
+      <Text style={styles.content}>{foro.content}</Text>
 
-          <Text style={styles.sectionTitle}>Comentarios</Text>
-          <FlatList
-            data={comentarios}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.commentItem}>
-                <Text style={styles.commentComentador}>{item.comentador}</Text>
-                <Text style={styles.commentTexto}>{item.respuesta}</Text>
-              </View>
-            )}
-          />
+      <Text style={styles.sectionTitle}>Comentarios</Text>
+      <FlatList
+        data={comentarios}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.commentItem}>
+            <Text style={styles.commentComentador}>{item.comentador}</Text>
+            <Text style={styles.commentTexto}>{item.respuesta}</Text>
+          </View>
+        )}
+      />
 
-          <Text style={styles.sectionTitle}>Agregar Comentario</Text>
-          <TextInput
-            style={styles.commentInput}
-            placeholder="Escribe tu comentario"
-            value={nuevoComentario}
-            onChangeText={setNuevoComentario}
-          />
-          <TouchableOpacity style={styles.agregarComentarioButton} onPress={handleAgregarComentario}>
-            <Text style={styles.agregarComentarioButtonText}>Agregar Comentario</Text>
-          </TouchableOpacity>
-        </>
-      )}
+      <Text style={styles.sectionTitle}>Agregar Comentario</Text>
+      <TextInput
+        style={styles.commentInput}
+        placeholder="Escribe tu comentario"
+        value={nuevoComentario}
+        onChangeText={setNuevoComentario}
+      />
+      <TouchableOpacity
+        style={styles.agregarComentarioButton}
+        onPress={handleAgregarComentario}
+      >
+        <Text style={styles.agregarComentarioButtonText}>
+          Agregar Comentario
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -123,6 +122,11 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: "#F9F9F9",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   title: {
     fontSize: 24,
@@ -184,5 +188,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+
+
 
 export default VistaForos;
