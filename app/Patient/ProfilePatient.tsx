@@ -1,23 +1,11 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  TouchableOpacity,
-  Image,
-  Alert,
-  Modal,
-  Pressable,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image, Alert, Modal, Pressable,} from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
+import { fetchPatientData, updatePatientProfilePicture, uploadImageToImgur,} from "../utils/firebaseService";
 import { PatientData } from "../utils/types";
-import axios from "axios";
 import { useAppTheme } from "../Constants/Colors"; // Importar los colores dinámicos
-import { fetchPatientData, updatePatientProfilePicture, uploadImageToImgur, } from "../utils/firebaseService";
 
 const ProfilePatient: React.FC = () => {
   const theme = useAppTheme(); // Obtener el tema dinámico
@@ -26,7 +14,6 @@ const ProfilePatient: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
-  const [imageSelected, setImageSelected] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -51,10 +38,10 @@ const ProfilePatient: React.FC = () => {
       allowsEditing: true,
       quality: 1,
     });
+
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
-      setImageSelected(true);
-      setModalVisible(true); // Mostrar el modal cuando se seleccione una imagen
+      setModalVisible(true);
     }
   };
 
@@ -63,10 +50,10 @@ const ProfilePatient: React.FC = () => {
       allowsEditing: true,
       quality: 1,
     });
+
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
-      setImageSelected(true);
-      setModalVisible(true); // Mostrar el modal cuando se tome una foto
+      setModalVisible(true);
     }
   };
 
@@ -75,41 +62,20 @@ const ProfilePatient: React.FC = () => {
       Alert.alert("Error", "Por favor selecciona una imagen primero");
       return;
     }
+
     setIsUploading(true);
+
     try {
-      const resizedImageUri = await resizeImage(selectedImage);
-      const formData = new FormData();
-      formData.append("image", {
-        uri: resizedImageUri,
-        type: "image/jpeg",
-        name: "profile.jpg",
-      } as any);
-      const response = await axios.post(
-        "https://api.imgur.com/3/image",
-        formData,
-        {
-          headers: {
-            Authorization: `Client-ID ${IMGUR_CLIENT_ID}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
+      const imageUrl = await uploadImageToImgur(selectedImage);
+      await updatePatientProfilePicture(userId as string, imageUrl);
+
+      setUploadedImageUrl(imageUrl);
+      setPatientData((prev) =>
+        prev ? { ...prev, profilePicture: imageUrl } : null
       );
-      if (response.data.success) {
-        const imageUrl = response.data.data.link;
-        if (!userId) return;
-        const userRef = doc(db, "userTest", userId as string);
-        await updateDoc(userRef, {
-          profilePicture: imageUrl,
-        });
-        setUploadedImageUrl(imageUrl);
-        setPatientData((prev) =>
-          prev ? { ...prev, profilePicture: imageUrl } : null
-        );
-        Alert.alert("Éxito", "Imagen subida y guardada correctamente");
-        setModalVisible(false);
-      } else {
-        Alert.alert("Error", "No se pudo subir la imagen");
-      }
+
+      Alert.alert("Éxito", "Imagen subida y guardada correctamente");
+      setModalVisible(false);
     } catch (error) {
       console.error("Error:", error);
       Alert.alert("Error", "Ocurrió un error durante el proceso");
@@ -138,7 +104,6 @@ const ProfilePatient: React.FC = () => {
     <ScrollView contentContainerStyle={[styles.scrollViewContainer, { backgroundColor: theme.background }]}>
       <Text style={[styles.title, { color: theme.text }]}>Perfil del Paciente</Text>
 
-
       {/* Imagen de perfil */}
       <View style={styles.profileImageContainer}>
         <Image
@@ -146,6 +111,7 @@ const ProfilePatient: React.FC = () => {
           style={styles.profileImage}
           resizeMode="cover"
         />
+        {/* Botón de lápiz encima de la imagen */}
         <TouchableOpacity
           style={styles.editButton}
           onPress={() => setModalVisible(true)}
@@ -223,7 +189,7 @@ const ProfilePatient: React.FC = () => {
             </View>
             <TouchableOpacity
               style={[styles.uploadButton, { backgroundColor: theme.button }]}
-              onPress={uploadToImgur}
+              onPress={handleUploadImage}
               disabled={isUploading}
             >
               {isUploading ? (
