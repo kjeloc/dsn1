@@ -1,13 +1,51 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView,} from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  useColorScheme,
+  Platform,
+  KeyboardAvoidingView,
+  Keyboard,
+} from "react-native";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import { db } from "../../config/firebaseConfig";
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  addDoc,
+  serverTimestamp,
+  Timestamp,
+  updateDoc,
+  doc,
+} from "firebase/firestore";
 import { useLocalSearchParams } from "expo-router";
-import { Message } from "../utils/types";
+
+// Configurar dayjs para tiempos relativos
+dayjs.extend(relativeTime);
 import { subscribeToChatMessages, sendMessageToChat} from "../utils/firebaseService";
 
 const ChatScreen: React.FC = () => {
   const { chatId, userId } = useLocalSearchParams<{ chatId: string; userId: string }>();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const colorScheme = useColorScheme(); // Detectar el esquema de color
+  const scrollViewRef = useRef<ScrollView>(null); // Referencia para el ScrollView
+
+  // Listener para hacer scroll al final cuando se abre el teclado
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => {
+      // Pequeño retardo para que se ajuste el layout
+      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+    });
+    return () => keyboardDidShowListener.remove();
+  }, []);
 
   // Validar que chatId y userId estén definidos
   if (!chatId || !userId) {
@@ -22,58 +60,86 @@ const ChatScreen: React.FC = () => {
   useEffect(() => {
     const unsubscribe = subscribeToChatMessages(chatId, (messagesData) => {
       setMessages(messagesData);
+      // Desplazarse al final de la lista cuando llegan nuevos mensajes
+      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 50);
     });
-
     return () => unsubscribe(); // Limpiar el listener al desmontar el componente
   }, [chatId]);
 
   // Enviar un nuevo mensaje
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
-
     try {
       await sendMessageToChat(chatId, userId, newMessage);
       setNewMessage(""); // Limpiar el campo de texto
+      // Desplazarse al final después de enviar un mensaje
+      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 50);
     } catch (error) {
       console.error("Error al enviar mensaje:", error);
     }
   };
 
-  return (
-    <KeyboardAvoidingView style={styles.container} behavior="padding">
-      {/* Lista de Mensajes */}
-      <FlatList
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.messageContainer,
-              item.senderId === userId ? styles.sentMessage : styles.receivedMessage,
-            ]}
-          >
-            <Text style={styles.messageText}>{item.text}</Text>
-            <Text style={styles.timestamp}>
-              {item.timestamp instanceof Date
-                ? item.timestamp.toLocaleTimeString() // Formatear la fecha si es un objeto Date
-                : "Fecha desconocida"}
-            </Text>
-          </View>
-        )}
-        contentContainerStyle={styles.messagesContainer}
-      />
+  // Colores dinámicos para el modo oscuro/claro
+  const backgroundColor = colorScheme === "dark" ? "#121212" : "#fff";
+  const textColor = colorScheme === "dark" ? "#fff" : "#000";
+  const borderColor = colorScheme === "dark" ? "#333" : "#ccc";
+  const sentMessageColor = colorScheme === "dark" ? "#3CB371" : "#DCF8C6";
+  const receivedMessageColor = colorScheme === "dark" ? "#444" : "#ECECEC";
+  const inputBackgroundColor = colorScheme === "dark" ? "#333" : "#f5f5f5";
+  const placeholderTextColor = colorScheme === "dark" ? "#aaa" : "#666";
 
-      {/* Campo de Entrada de Mensajes */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={newMessage}
-          onChangeText={setNewMessage}
-          placeholder="Escribe un mensaje..."
-        />
-        <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
-          <Text style={styles.sendButtonText}>Enviar</Text>
-        </TouchableOpacity>
+  return (
+    <KeyboardAvoidingView
+      behavior={"padding"}
+      style={{ flex: 1, backgroundColor }}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+    >
+      {/* Contenedor Principal */}
+      <View style={{ flex: 1 }}>
+        {/* Lista de Mensajes */}
+        <ScrollView
+          ref={scrollViewRef} // Asignar la referencia
+          contentContainerStyle={[styles.messagesContainer, { backgroundColor }]}
+          showsVerticalScrollIndicator={false}
+          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+        >
+          {messages.map((message) => (
+            <View
+              key={message.id}
+              style={[
+                styles.messageContainer,
+                message.senderId === userId ? styles.sentMessage : styles.receivedMessage,
+                message.senderId === userId
+                  ? { backgroundColor: sentMessageColor }
+                  : { backgroundColor: receivedMessageColor },
+              ]}
+            >
+              <Text style={[styles.messageText, { color: textColor }]}>{message.text}</Text>
+              <Text style={[styles.timestamp, { color: textColor }]}>
+                {message.timestamp instanceof Date
+                  ? dayjs(message.timestamp).fromNow()
+                  : "Fecha desconocida"}
+              </Text>
+            </View>
+          ))}
+        </ScrollView>
+
+        {/* Campo de Entrada de Mensajes */}
+        <View style={[styles.inputContainer, { borderTopColor: borderColor }]}>
+          <TextInput
+            style={[
+              styles.input,
+              { backgroundColor: inputBackgroundColor, color: textColor },
+            ]}
+            value={newMessage}
+            onChangeText={setNewMessage}
+            placeholder="Escribe un mensaje..."
+            placeholderTextColor={placeholderTextColor}
+          />
+          <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
+            <Text style={styles.sendButtonText}>Enviar</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -81,10 +147,6 @@ const ChatScreen: React.FC = () => {
 
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -92,28 +154,30 @@ const styles = StyleSheet.create({
   },
   messagesContainer: {
     flexGrow: 1,
-    justifyContent: "flex-end",
+    paddingBottom: 16, // Espacio adicional en la parte inferior
   },
   messageContainer: {
     maxWidth: "80%",
     marginVertical: 8,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   sentMessage: {
     alignSelf: "flex-end",
-    backgroundColor: "#DCF8C6",
   },
   receivedMessage: {
     alignSelf: "flex-start",
-    backgroundColor: "#ECECEC",
   },
   messageText: {
     fontSize: 16,
   },
   timestamp: {
     fontSize: 12,
-    color: "#666",
     textAlign: "right",
     marginTop: 4,
   },
@@ -121,25 +185,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderTopWidth: 1,
-    borderColor: "#ccc",
     paddingTop: 8,
+    paddingBottom: Platform.OS === "ios" ? 8 : 0, // Ajustar para iOS
+    paddingHorizontal: 16, // Añadir espacio horizontal
   },
   input: {
     flex: 1,
-    padding: 8,
+    padding: 12,
     borderWidth: 1,
     borderColor: "#ccc",
-    borderRadius: 20,
+    borderRadius: 24,
     marginRight: 8,
   },
   sendButton: {
-    padding: 8,
+    padding: 12,
     backgroundColor: "#007BFF",
-    borderRadius: 20,
+    borderRadius: 24,
   },
   sendButtonText: {
     color: "#fff",
     fontWeight: "bold",
+    fontSize: 16,
   },
 });
 

@@ -1,13 +1,23 @@
-
-import { useState,useEffect} from "react";
-import { View, TextInput, Button, StyleSheet, Text, Alert, Platform, TouchableOpacity } from "react-native";
+// screens/LoginScreen.tsx
+import { useState, useEffect } from "react";
+import {
+  View,
+  TextInput,
+  Button,
+  StyleSheet,
+  Text,
+  Alert,
+  TouchableOpacity,
+  Image,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons"; // Para íconos
 import { collection, getDocs, query, where, doc, updateDoc } from "firebase/firestore";
 import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
 import dayjs from "dayjs";
-import { useTheme } from "../ThemeContext"; // Importar el hook para cambiar el tema
-import { db } from "../../config/firebaseConfig";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useAppTheme } from "../Constants/Colors"; // Importar los colores dinámicos
+import { db } from "../../config/firebaseConfig";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -23,7 +33,7 @@ const LoginScreen = () => {
   const [isLoading, setIsLoading] = useState(false); // Estado para bloquear los campos
   const router = useRouter();
   const { userId } = useLocalSearchParams();
-  const { theme, toggleTheme } = useTheme(); // Obtener el tema y la función para alternar
+  const theme = useAppTheme(); // Obtener el tema dinámico
 
   useEffect(() => {
     const requestNotificationPermissions = async () => {
@@ -71,7 +81,9 @@ const LoginScreen = () => {
   const countAppointmentsForToday = async (userId: string) => {
     try {
       const today = dayjs().format("YYYY-MM-DD");
-      const appointmentsSnapshot = await getDocs(collection(db, "userTest", userId, "appointments"));
+      const appointmentsSnapshot = await getDocs(
+        collection(db, "userTest", userId, "appointments")
+      );
       const todaysAppointments = appointmentsSnapshot.docs.filter((doc) => {
         const appointment = doc.data();
         return appointment.date === today;
@@ -88,7 +100,6 @@ const LoginScreen = () => {
       Alert.alert("Error", "Por favor, completa todos los campos.");
       return;
     }
-
     setIsLoading(true); // Bloquear los campos
     try {
       const usersRef = collection(db, "userTest");
@@ -108,11 +119,11 @@ const LoginScreen = () => {
       const appointmentCount = await countAppointmentsForToday(userDoc.id);
       await scheduleNotification(appointmentCount);
       if (userData.rol === "Admin") {
-        router.push("/Admin/menuAdmin");
+        router.replace("/Admin/menuAdmin");
       } else if (userData.rol === "Dentist") {
-        router.push(`/Dentist/menuDentist?userId=${userDoc.id}`);
+        router.replace(`/Dentist/menuDentist?userId=${userDoc.id}`);
       } else if (userData.rol === "Patient") {
-        router.push(`/Patient/menuPatient?userId=${userDoc.id}`);
+        router.replace(`/Patient/menuPatient?userId=${userDoc.id}`);
       } else {
         Alert.alert("Error", "Rol no válido");
       }
@@ -125,44 +136,65 @@ const LoginScreen = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Botón de Cambio de Tema */}
-      <TouchableOpacity onPress={toggleTheme} style={styles.themeButton}>
-        <Text style={styles.themeButtonText}>T</Text>
-      </TouchableOpacity>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Título Elegante */}
+      <Text style={[styles.title, { color: theme.text }]}>DENTAL SOCIAL NETWORK</Text>
 
-      <Text style={[styles.title, { color: theme.colors.text }]}>Iniciar Sesión</Text>
+      <Image source={require("../../assets/images/salud-dental.png")} style={[styles.logo, { width: 80, height: 80 }]} />
+      {/* Campo de Correo Electrónico */}
       <TextInput
         style={[
           styles.input,
-          { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+          { backgroundColor: theme.card, borderColor: theme.border, color: theme.text },
         ]}
         placeholder="Correo electrónico"
-        placeholderTextColor={theme.colors.secondary}
+        placeholderTextColor={theme.secondary}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
         editable={!isLoading} // Deshabilitar cuando isLoading es true
       />
+
+      {/* Campo de Contraseña */}
       <TextInput
         style={[
           styles.input,
-          { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+          { backgroundColor: theme.card, borderColor: theme.border, color: theme.text },
         ]}
         placeholder="Contraseña"
-        placeholderTextColor={theme.colors.secondary}
+        placeholderTextColor={theme.secondary}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
         editable={!isLoading} // Deshabilitar cuando isLoading es true
       />
+
+      {/* Botón de Iniciar Sesión */}
       <TouchableOpacity
-        style={[styles.button, { opacity: isLoading ? 0.5 : 1 }]} // Reducir opacidad cuando isLoading es true
+        style={[
+          styles.button,
+          { backgroundColor: theme.button, opacity: isLoading ? 0.5 : 1 },
+        ]}
         onPress={handleLogin}
         disabled={isLoading} // Deshabilitar el botón cuando isLoading es true
       >
         <Text style={styles.buttonText}>{isLoading ? "Iniciando..." : "Iniciar Sesión"}</Text>
+      </TouchableOpacity>
+
+      {/* Botón de Crear Cuenta */}
+      <TouchableOpacity
+        style={styles.createAccountButton}
+        onPress={() => router.push("/Auth/registerUser")} // Navegar a la pantalla de registro
+      >
+        <Text style={styles.createAccountButtonText}>Crear Cuenta para Paciente</Text>
+      </TouchableOpacity>
+      {/* Botón de Crear Cuenta */}
+      <TouchableOpacity
+        style={styles.createAccountButton}
+        onPress={() => router.push("/Auth/registerDentist")} // Navegar a la pantalla de registro
+      >
+        <Text style={styles.createAccountButtonText}>Crear Cuenta para Dentista</Text>
       </TouchableOpacity>
     </View>
   );
@@ -176,9 +208,13 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
+    fontWeight: "bold",
     marginBottom: 20,
-    fontWeight: "600",
+    textAlign: "center",
+  },
+  logo: {
+    marginBottom: 40,
   },
   input: {
     height: 50,
@@ -190,7 +226,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   button: {
-    backgroundColor: "#007BFF",
     padding: 15,
     borderRadius: 8,
     alignItems: "center",
@@ -201,19 +236,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  themeButton: {
-    position: "absolute",
-    top: 20,
-    right: 20,
-    width: 40,
-    height: 40,
-    backgroundColor: "#E0E0E0",
+  createAccountButton: {
+    marginTop: 20,
+    padding: 10,
     borderRadius: 8,
-    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#ccc",
     alignItems: "center",
+    width: "100%",
   },
-  themeButtonText: {
-    fontSize: 20,
+  createAccountButtonText: {
+    color: "#007BFF",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 

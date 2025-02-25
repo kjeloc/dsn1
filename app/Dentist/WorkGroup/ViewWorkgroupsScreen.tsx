@@ -32,12 +32,12 @@ const ViewWorkgroupsScreen: React.FC = () => {
 
   // Manejar la navegación para ver los detalles del grupo
   const handleViewGroup = (groupId: string) => {
-    router.push(`./ViewWorkgroupDetails?groupId=${groupId}`);
+    router.push(`/Dentist/WorkGroup/ViewWorkgroupDetails?groupId=${groupId}`);
   };
 
   // Manejar la navegación para ver el chat del grupo
   const handleViewGroupChats = (groupId: string) => {
-    router.push(`./GroupChatScreen?groupId=${groupId}&userId=${userId}`);
+    router.push(`/Dentist/WorkGroup/GroupChatScreen?groupId=${groupId}&userId=${userId}`);
   };
 
   if (loading) {

@@ -1,12 +1,31 @@
 // MenuDentist.tsx
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  TouchableOpacity,
+  Image,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient"; // Para el degradado
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import dayjs from "dayjs";
 import { fetchAppointments, fetchDentistData } from "../utils/firebaseService";
-import { Appointment } from "../utils/types";
+import { useColorScheme } from "react-native";
+import { useAppTheme } from "../Constants/Colors"; 
 
 const MenuDentist: React.FC = () => {
+  interface Appointment {
+    id: string;
+    date: string;
+    hour: string;
+    patientEmail: string;
+    reason: string;
+  }
+
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [dentistName, setDentistName] = useState<string | null>(null);
@@ -15,6 +34,7 @@ const MenuDentist: React.FC = () => {
   const router = useRouter();
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const toggleCalendario = () => setMostrarCalendario(!mostrarCalendario);
+  
 
   // Cargar citas del odontólogo
   const fetchAppointmentsData = useCallback(async () => {
@@ -47,47 +67,57 @@ const MenuDentist: React.FC = () => {
     }, [fetchDentistInfo, fetchAppointmentsData])
   );
 
+  const toggleCalendario = () => setMostrarCalendario(!mostrarCalendario);
+
   const handleDayPress = (day: string) => {
     setSelectedDays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
     );
   };
 
+  // Renderiza un calendario para el mes actual usando 42 celdas (6 semanas)
   const renderCalendar = () => {
     const today = dayjs();
-    const firstDayOfWeek = today.startOf("week");
-    const calendarDays = Array.from({ length: 35 }, (_, index) =>
-      firstDayOfWeek.add(index, "day")
-    );
+    const firstDayOfMonth = today.startOf("month");
+    const daysInMonth = today.daysInMonth();
+    const startDayOfWeek = firstDayOfMonth.day(); // 0: domingo, 1: lunes, etc.
+    const totalCells = 42;
+    const calendarDays = [];
+
+    for (let i = 0; i < totalCells; i++) {
+      const dayNumber = i - startDayOfWeek + 1;
+      if (dayNumber < 1 || dayNumber > daysInMonth) {
+        calendarDays.push(null);
+      } else {
+        calendarDays.push(firstDayOfMonth.date(dayNumber));
+      }
+    }
 
     return (
       <View style={styles.calendarContainer}>
-        {calendarDays.map((date, index) => {
-          const formattedDate = date.format("YYYY-MM-DD");
-          const isPast = date.isBefore(today, "day");
+        {calendarDays.map((day, index) => {
+          if (!day) {
+            return <View key={index} style={styles.emptyDay} />;
+          }
+          const formattedDate = day.format("YYYY-MM-DD");
+          const isPast = day.isBefore(today, "day");
           const hasAppointments = appointments.some(
             (appointment) => appointment.date === formattedDate
           );
           const isSelected = selectedDays.includes(formattedDate);
-
-          let backgroundColor = "#B0E0E6";
-          if (isPast) backgroundColor = "#D3D3D3";
-          if (hasAppointments) backgroundColor = "#32CD32";
-          if (isSelected) backgroundColor = "#000000";
+          let bgColor = cardBackgroundColor;
+          if (isPast) bgColor = "#444444";
+          if (hasAppointments) bgColor = "#32CD32";
+          if (isSelected) bgColor = "#FFA500";
 
           return (
             <TouchableOpacity
               key={index}
-              style={[styles.calendarButton, { backgroundColor }]}
+              style={[styles.calendarButton, { backgroundColor: bgColor }]}
               onPress={() => handleDayPress(formattedDate)}
             >
-              <Text
-                style={[
-                  styles.calendarText,
-                  isSelected && { color: "#FFFFFF" },
-                ]}
-              >
-                {date.format("DD")}
+              <Text style={[styles.calendarText, { color: textColor }]}>
+                {day.format("DD")}
               </Text>
             </TouchableOpacity>
           );
@@ -109,8 +139,8 @@ const MenuDentist: React.FC = () => {
         );
       })
       .sort((a, b) => {
-        const dateComparison = dayjs(a.date).diff(dayjs(b.date));
-        if (dateComparison !== 0) return dateComparison;
+        const diff = dayjs(a.date).diff(dayjs(b.date));
+        if (diff !== 0) return diff;
         return dayjs(a.hour, "HH:mm").diff(dayjs(b.hour, "HH:mm"));
       });
   };
@@ -124,143 +154,289 @@ const MenuDentist: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007BFF" />
+      <View style={[styles.loadingContainer, { backgroundColor }]}>
+        <ActivityIndicator size="large" color={textColor} />
       </View>
     );
   }
 
-  return (
-    <View style={styles.container}>
-      {/* Título */}
-      <Text style={styles.title}>Bienvenido, {dentistName}</Text>
-
-      {/* Botones de navegación */}
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push("./QRScannerScreen")}
+  // Componente de cabecera para la FlatList principal
+  const ListHeader = () => (
+    <View style={styles.headerContainer}>
+      {/* Tarjeta con degradado */}
+      <LinearGradient
+        colors={isDark ? ["#1E1E1E", "#333333"] : ["#FFFFFF", "#E0F7FA"]}
+        style={styles.profileCard}
       >
-        <Text style={styles.buttonText}>Escanear QR</Text>
-      </TouchableOpacity>
+        {/* Foto de perfil e información */}
+        <View style={styles.profileSection}>
+          {profilePicture ? (
+            <Image
+              source={{ uri: profilePicture }}
+              style={styles.profilePicture}
+            />
+          ) : (
+            <Ionicons name="person-circle" size={60} color={textColor} />
+          )}
+          <View style={styles.welcomeTextContainer}>
+            <Text style={[styles.welcomeText, { color: textColor }]}>
+              Bienvenido, {dentistName || "Odontólogo"}
+            </Text>
+            <TouchableOpacity
+              style={[styles.profileButton, { backgroundColor: buttonBackgroundColor }]}
+              onPress={() => router.push(`/Dentist/ProfileDentist?userId=${userId}`)}
+            >
+              <Text style={[styles.profileButtonText]}>
+                Ir al perfil
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </LinearGradient>
 
+      {/* Menú principal horizontal */}
+      <FlatList
+        data={buttons}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.buttonListContainer}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[
+              styles.button,
+              { backgroundColor: buttonBackgroundColor },
+            ]}
+            onPress={item.onPress}
+          >
+            <Ionicons name={item.icon as any} size={24} color="#fff" />
+            <Text style={styles.buttonText}>{item.label}</Text>
+          </TouchableOpacity>
+        )}
+      />
+
+      {/* Botón para mostrar/ocultar el calendario */}
       <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push(`./Appointment/addAppointment?userId=${userId}`)}
+        style={[
+          styles.toggleCalendarButton,
+          { backgroundColor: "rgba(153, 152, 152, 0.29)" },
+        ]}
+        onPress={toggleCalendario}
       >
-        <Text style={styles.buttonText}>Agregar Cita</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push(`./ProfileDentist?userId=${userId}`)}
-      >
-        <Text style={styles.buttonText}>Perfil</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push(`./Forum/CreateForum?userId=${userId}`)}
-      >
-        <Text style={styles.buttonText}>Crear Foro</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push(`./Forum/ListaForos?userId=${userId}`)}
-      >
-        <Text style={styles.buttonText}>Ver Foros</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push(`../Chat/ChatListScreen?userId=${userId}`)}
-      >
-        <Text style={styles.buttonText}>Ir al Chat</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push(`./Workgroup/CreateWorkgroup?dentistEmail=${dentistName}`)}
-      >
-        <Text style={styles.buttonText}>Crear Grupo de Trabajo</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push(`./Workgroup/ViewWorkgroupsScreen?dentistEmail=${dentistName}&userId=${userId}`)}
-      >
-        <Text style={styles.buttonText}>Ver Grupos de Trabajo</Text>
-      </TouchableOpacity>
-
-      {/* Calendario */}
-      <TouchableOpacity style={styles.toggleButton} onPress={toggleCalendario}>
-        <Text style={styles.toggleButtonText}>
+        <Text style={[styles.toggleCalendarText, { color: textColor }]}>
           {mostrarCalendario ? "Ocultar Calendario" : "Mostrar Calendario"}
         </Text>
       </TouchableOpacity>
+
+      {/* Calendario */}
       {mostrarCalendario && renderCalendar()}
 
-      {/* Citas */}
-      <Text style={styles.subtitle}>
+      {/* Subtítulo */}
+      <Text style={[styles.subtitle, { color: textColor }]}>
         {selectedDays.length === 0 ? "Próximas citas" : "Citas Agendadas"}
       </Text>
-      <FlatList
-        data={filteredAppointments}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.appointmentCard}
-            onPress={() =>
-              router.push({
-                pathname: "./Appointment/ViewAppointmentDentist",
-                params: { appointment: JSON.stringify(item) },
-              })
-            }
-          >
-            <Text style={styles.appointmentText}>Paciente: {item.patientEmail}</Text>
-            <Text style={styles.appointmentText}>Fecha: {item.date}</Text>
-            <Text style={styles.appointmentText}>Hora: {item.hour}</Text>
-            <Text style={styles.appointmentText}>Motivo: {item.reason}</Text>
-          </TouchableOpacity>
-        )}
-        ListEmptyComponent={<Text style={styles.emptyText}>No hay citas disponibles.</Text>}
-      />
     </View>
+  );
+
+  // Botones del menú principal
+  const buttons = [
+    {
+      icon: "qr-code",
+      label: "Escanear QR",
+      onPress: () =>
+        router.push({
+          pathname: "/Dentist/QRScannerScreen",
+          params: { appointments: JSON.stringify(appointments) },
+        }),
+    },
+    {
+      icon: "calendar",
+      label: "Agregar Cita",
+      onPress: () => router.push(`/Dentist/Appointment/addAppointment?userId=${userId}`),
+    },
+    {
+      icon: "person",
+      label: "Perfil",
+      onPress: () => router.push(`/Dentist/ProfileDentist?userId=${userId}`),
+    },
+    {
+      icon: "chatbubbles",
+      label: "Ir al Chat",
+      onPress: () => router.push(`/Chat/ChatListScreen?userId=${userId}`),
+    },
+    {
+      icon: "create",
+      label: "Crear Foro",
+      onPress: () => router.push(`/Dentist/Forum/CreateForum?userId=${userId}`),
+    },
+    {
+      icon: "list",
+      label: "Ver Foros",
+      onPress: () => router.push(`/Dentist/Forum/ListaForos?userId=${userId}`),
+    },
+    {
+      icon: "people",
+      label: "Crear Grupo",
+      onPress: () =>
+        router.push(`/Dentist/WorkGroup/CreateWorkgroup?dentistEmail=${dentistEmail}`),
+    },
+    {
+      icon: "people-outline",
+      label: "Ver Grupos",
+      onPress: () =>
+        router.push(
+          `/Dentist/WorkGroup/ViewWorkgroupsScreen?dentistEmail=${dentistEmail}&userId=${userId}`
+        ),
+    },
+  ];
+
+  return (
+    <View style={[styles.container, { backgroundColor }]}>
+    <FlatList
+      data={filteredAppointments}
+      keyExtractor={(item) => item.id}
+      ListHeaderComponent={ListHeader}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+          style={[styles.appointmentCard, { backgroundColor: cardBackgroundColor }]}
+          onPress={() =>
+            router.push({
+              pathname: "/Dentist/Appointment/ViewAppointmentDentist",
+              params: { appointment: JSON.stringify(item) },
+            })
+          }
+        >
+          <Text style={[styles.appointmentText, { color: textColor }]}>
+            Paciente: {item.patientEmail}
+          </Text>
+          <Text style={[styles.appointmentText, { color: textColor }]}>
+            Fecha: {item.date} - Hora: {item.hour}
+          </Text>
+          <Text style={[styles.appointmentText, { color: textColor }]}>
+            Motivo: {item.reason}
+          </Text>
+        </TouchableOpacity>
+      )}
+      ListEmptyComponent={
+        <Text style={[styles.emptyText, { color: textColor }]}>
+          No hay citas para los días seleccionados.
+        </Text>
+      }
+      contentContainerStyle={styles.contentContainer}
+    />
+  </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  contentContainer: {
     padding: 20,
-    backgroundColor: "#F9F9F9",
+    paddingBottom: 40,
+  },
+  headerContainer: {
+    marginBottom: 20,
+  },
+  profileCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  profileSection: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  profilePicture: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 10,
+  },
+  welcomeTextContainer: {
+    flex: 1,
+  },
+  welcomeText: {
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  profileButton: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    backgroundColor: "#007BFF",
+    borderRadius: 5,
+    alignSelf: "flex-start",
+    marginTop: 5,
+  },
+  profileButtonText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 26,
+    fontWeight: "700",
     textAlign: "center",
     marginBottom: 20,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "600",
-    marginBottom: 10,
+    marginVertical: 10,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
+  buttonListContainer: {
+    flexDirection: "row",
+    marginBottom: 20,
+    height: 100,
+    alignItems: "center",
+  },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: "center",
+    marginHorizontal: 8,
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  buttonText: {
+    color: "rgb(255, 255, 255)",
+    fontSize: 13,
+    fontWeight: "600",
+    marginTop: 6,
+    textAlign: "center",
+  },
+  toggleCalendarButton: {
+    alignSelf: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  toggleCalendarText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
   calendarContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "center",
     marginBottom: 20,
   },
   calendarButton: {
-    width: "14%",
-    aspectRatio: 1,
-    justifyContent: "center",
+    padding: 12,
+    margin: 4,
+    borderRadius: 8,
+    width: "13%",
     alignItems: "center",
     borderRadius: 8,
     margin: 2,
@@ -279,7 +455,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#FFF",
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
   },
   toggleButton: {
     backgroundColor: "#007BFF",
@@ -291,28 +467,25 @@ const styles = StyleSheet.create({
   toggleButtonText: {
     color: "#FFF",
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
   },
   appointmentCard: {
-    padding: 15,
-    marginBottom: 10,
-    borderRadius: 8,
-    backgroundColor: "#E0F7FA",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
   },
   appointmentText: {
-    fontSize: 14,
-    color: "#333",
-    marginBottom: 5,
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  emptyDay: {
+    width: "13%",
+    margin: 4,
   },
   emptyText: {
     textAlign: "center",
-    fontSize: 16,
-    color: "#666",
+    fontSize: 18,
     marginVertical: 20,
   },
 });
