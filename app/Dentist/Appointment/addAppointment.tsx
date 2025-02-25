@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { ScrollView, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform } from "react-native";
+import { ScrollView, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform, useColorScheme } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { db } from "../../../config/firebaseConfig";
 import { collection, addDoc, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Picker } from "@react-native-picker/picker";
+import RNPickerSelect from "react-native-picker-select"; // Importamos react-native-picker-select
 import { DatePicker } from "antd"; // Import DatePicker from Ant Design for web support
 import { Appointment } from "../../utils/types";
 
@@ -22,6 +22,7 @@ const AddAppointment: React.FC = () => {
   const officeHours = [
     "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"
   ];
+  const colorScheme = useColorScheme(); // Detectar el esquema de color del dispositivo
 
   useEffect(() => {
     const fetchDentistData = async () => {
@@ -38,7 +39,6 @@ const AddAppointment: React.FC = () => {
         console.error("Error al obtener datos del dentista:", error);
       }
     };
-
     fetchDentistData();
   }, [userId]);
 
@@ -53,22 +53,19 @@ const AddAppointment: React.FC = () => {
       Alert.alert("Error", "Usuario no identificado.");
       return;
     }
-
     try {
-      // 1. Buscar el ID del paciente basado en su correo electrónico
+      // Buscar el ID del paciente basado en su correo electrónico
       const patientsQuery = await getDocs(
         query(collection(db, "userTest"), where("email", "==", data.patientEmail))
       );
-
       if (patientsQuery.empty) {
         Alert.alert("Error", "No se encontró al paciente con el correo proporcionado.");
         return;
       }
-
       const patientDoc = patientsQuery.docs[0];
       const patientId = patientDoc.id;
 
-      // 2. Guardar la cita en la subcolección del dentista
+      // Guardar la cita en la subcolección del dentista
       await addDoc(collection(db, "userTest", userId as string, "appointments"), {
         patientEmail: data.patientEmail,
         date: date.toISOString().split("T")[0],
@@ -78,7 +75,7 @@ const AddAppointment: React.FC = () => {
         dentistEmail: dentistEmail,
       });
 
-      // 3. Guardar la cita en la subcolección del paciente
+      // Guardar la cita en la subcolección del paciente
       await addDoc(collection(db, "userTest", patientId, "appointments"), {
         patientEmail: data.patientEmail,
         date: date.toISOString().split("T")[0],
@@ -98,41 +95,53 @@ const AddAppointment: React.FC = () => {
   };
 
   return (
-    
-      <ScrollView
-          >
-      <Text style={styles.title}>Agregar Nueva Cita</Text>
+    <ScrollView style={[styles.container, { backgroundColor: colorScheme === 'dark' ? '#121212' : '#F9F9F9' }]}>
+      <Text style={[styles.title, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>Agregar Nueva Cita</Text>
 
+      {/* Selector de pacientes */}
       <Controller
         control={control}
         rules={{ required: true }}
         render={({ field: { onChange, value } }) => (
-          <Picker
-            selectedValue={value}
+          <RNPickerSelect
             onValueChange={onChange}
-            style={styles.input}
-          >
-            <Picker.Item label="Selecciona un paciente" value="" />
-            {patients.map((email) => (
-              <Picker.Item key={email} label={email} value={email} />
-            ))}
-          </Picker>
+            items={patients.map((email) => ({ label: email, value: email }))}
+            placeholder={{ label: "Selecciona un paciente", value: null }}
+            style={{
+              inputAndroid: {
+                backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+                borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+                color: colorScheme === 'dark' ? '#fff' : '#000',
+                padding: 10,
+                borderRadius: 8,
+                marginBottom: 15,
+              },
+              inputIOS: {
+                backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+                borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+                color: colorScheme === 'dark' ? '#fff' : '#000',
+                padding: 10,
+                borderRadius: 8,
+                marginBottom: 15,
+              },
+            }}
+          />
         )}
         name="patientEmail"
         defaultValue=""
       />
 
+      {/* Selector de fecha */}
       {Platform.OS === "web" ? (
         <DatePicker
           style={{ width: "100%", marginBottom: 15 }}
           onChange={(dateMoment) => setDate(dateMoment?.toDate() || new Date())}
         />
       ) : (
-        <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.input}>
-          <Text>{date.toISOString().split("T")[0]}</Text>
+        <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.input, { backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF', borderColor: colorScheme === 'dark' ? '#444' : '#CCC' }]}>
+          <Text style={{ color: colorScheme === 'dark' ? '#fff' : '#000' }}>{date.toISOString().split("T")[0]}</Text>
         </TouchableOpacity>
       )}
-
       {showDatePicker && Platform.OS !== "web" && (
         <DateTimePicker
           value={date}
@@ -142,42 +151,73 @@ const AddAppointment: React.FC = () => {
         />
       )}
 
-      <Picker
-        selectedValue={hour}
+      {/* Selector de hora */}
+      <RNPickerSelect
         onValueChange={(itemValue) => setHour(itemValue)}
-        style={styles.input}
-      >
-        {officeHours.map((hourOption) => (
-          <Picker.Item key={hourOption} label={hourOption} value={hourOption} />
-        ))}
-      </Picker>
+        items={officeHours.map((hourOption) => ({ label: hourOption, value: hourOption }))}
+        placeholder={{ label: "Selecciona una hora", value: null }}
+        style={{
+          inputAndroid: {
+            backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+            borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+            color: colorScheme === 'dark' ? '#fff' : '#000',
+            padding: 10,
+            borderRadius: 8,
+            marginBottom: 15,
+          },
+          inputIOS: {
+            backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+            borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+            color: colorScheme === 'dark' ? '#fff' : '#000',
+            padding: 10,
+            borderRadius: 8,
+            marginBottom: 15,
+          },
+        }}
+      />
 
+      {/* Selector de consultorios */}
       <Controller
         control={control}
         rules={{ required: true }}
         render={({ field: { onChange, value } }) => (
-          <Picker
-            selectedValue={value}
+          <RNPickerSelect
             onValueChange={onChange}
-            style={styles.input}
-          >
-            <Picker.Item label="Selecciona un consultorio" value="" />
-            {dentalOffices.map((office) => (
-              <Picker.Item key={office} label={office} value={office} />
-            ))}
-          </Picker>
+            items={dentalOffices.map((office) => ({ label: office, value: office }))}
+            placeholder={{ label: "Selecciona un consultorio", value: null }}
+            style={{
+              inputAndroid: {
+                backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+                borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+                color: colorScheme === 'dark' ? '#fff' : '#000',
+                padding: 10,
+                borderRadius: 8,
+                marginBottom: 15,
+              },
+              inputIOS: {
+                backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+                borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+                color: colorScheme === 'dark' ? '#fff' : '#000',
+                padding: 10,
+                borderRadius: 8,
+                marginBottom: 15,
+              },
+            }}
+          />
         )}
         name="dentalOffice"
         defaultValue=""
       />
 
+      {/* Campo de motivo */}
       <Controller
         control={control}
         rules={{ required: true }}
         render={({ field: { onChange, value } }) => (
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF', borderColor: colorScheme === 'dark' ? '#444' : '#CCC', color: colorScheme === 'dark' ? '#fff' : '#000' }]}
             placeholder="Motivo de la cita"
+            placeholderTextColor={colorScheme === 'dark' ? '#aaa' : '#888'}
             onChangeText={onChange}
             value={value}
           />
@@ -186,10 +226,11 @@ const AddAppointment: React.FC = () => {
         defaultValue=""
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleSubmit(onSubmit)}>
+      {/* Botón de envío */}
+      <TouchableOpacity style={[styles.button, { backgroundColor: colorScheme === 'dark' ? '#761FE0' : '#007BFF' }]} onPress={handleSubmit(onSubmit)}>
         <Text style={styles.buttonText}>Agregar Cita</Text>
       </TouchableOpacity>
-      </ScrollView>
+    </ScrollView>
   );
 };
 
@@ -197,7 +238,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#F9F9F9",
   },
   title: {
     fontSize: 24,
@@ -207,14 +247,11 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#CCC",
     padding: 10,
     borderRadius: 8,
     marginBottom: 15,
-    backgroundColor: "#FFF",
   },
   button: {
-    backgroundColor: "#007BFF",
     padding: 15,
     borderRadius: 8,
     alignItems: "center",

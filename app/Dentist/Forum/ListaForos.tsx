@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { FlatList, Text, View, TextInput, StyleSheet, TouchableOpacity } from "react-native";
+import { FlatList, Text, View, TextInput, StyleSheet, TouchableOpacity, useColorScheme } from "react-native";
 import { db } from "../../../config/firebaseConfig";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Picker } from "@react-native-picker/picker";
+import RNPickerSelect from "react-native-picker-select"; // Importamos react-native-picker-select
 import { Forum } from "../../utils/types";
 
 const ListaForos: React.FC = () => {
@@ -14,6 +14,7 @@ const ListaForos: React.FC = () => {
   const [categoriaFilter, setCategoriaFilter] = useState("");
   const [tipoFilter, setTipoFilter] = useState("");
   const router = useRouter();
+  const colorScheme = useColorScheme(); // Detectar el esquema de color del dispositivo
 
   useEffect(() => {
     const fetchForos = async () => {
@@ -35,15 +36,26 @@ const ListaForos: React.FC = () => {
 
   useEffect(() => {
     let filtered = foros;
+
+    // Filtrar por autor
     if (autorFilter) {
-      filtered = filtered.filter(foro => foro.author.toLowerCase().includes(autorFilter.toLowerCase()));
+      filtered = filtered.filter(
+        (foro) =>
+          foro.author && // Asegurarse de que `foro.author` no sea undefined
+          foro.author.toLowerCase().includes(autorFilter.toLowerCase())
+      );
     }
+
+    // Filtrar por categoría
     if (categoriaFilter) {
-      filtered = filtered.filter(foro => foro.category === categoriaFilter);
+      filtered = filtered.filter((foro) => foro.category === categoriaFilter);
     }
+
+    // Filtrar por tipo
     if (tipoFilter) {
-      filtered = filtered.filter(foro => foro.type === tipoFilter);
+      filtered = filtered.filter((foro) => foro.type === tipoFilter);
     }
+
     setFilteredForos(filtered);
   }, [autorFilter, categoriaFilter, tipoFilter, foros]);
 
@@ -52,51 +64,95 @@ const ListaForos: React.FC = () => {
       pathname: "/Dentist/Forum/VistaForos",
       params: {
         userId: userId, // agrega el parámetro userId
-        id: id          // agrega el parámetro id
+        id: id, // agrega el parámetro id
       },
     });
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Lista de Foros</Text>
+    <View style={[styles.container, { backgroundColor: colorScheme === 'dark' ? '#121212' : '#F9F9F9' }]}>
+      <Text style={[styles.title, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>Lista de Foros</Text>
 
       {/* Filtros */}
       <View style={styles.filtersContainer}>
-        <Text style={styles.filterLabel}>Autor:</Text>
+        <Text style={[styles.filterLabel, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>Autor:</Text>
         <TextInput
-          style={styles.filterInput}
+          style={[
+            styles.filterInput,
+            {
+              backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+              borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+              color: colorScheme === 'dark' ? '#fff' : '#000',
+            },
+          ]}
           placeholder="Correo del autor"
+          placeholderTextColor={colorScheme === 'dark' ? '#aaa' : '#888'}
           value={autorFilter}
           onChangeText={setAutorFilter}
         />
 
-        <Text style={styles.filterLabel}>Categoría:</Text>
-        <Picker
-          style={styles.picker}
-          selectedValue={categoriaFilter}
-          onValueChange={setCategoriaFilter}
-        >
-          <Picker.Item label="Todos" value="" />
-          <Picker.Item label="General" value="General" />
-          <Picker.Item label="Ortodoncia" value="Ortodoncia" />
-          <Picker.Item label="Endodoncia" value="Endodoncia" />
-          <Picker.Item label="Periodoncia" value="Periodoncia" />
-          <Picker.Item label="Estética" value="Estética" />
-          <Picker.Item label="Prostodoncia" value="Prostodoncia" />
-        </Picker>
+        <Text style={[styles.filterLabel, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>Categoría:</Text>
+        <RNPickerSelect
+          onValueChange={(value) => setCategoriaFilter(value)}
+          items={[
+            { label: "Todos", value: "" },
+            { label: "General", value: "General" },
+            { label: "Ortodoncia", value: "Ortodoncia" },
+            { label: "Endodoncia", value: "Endodoncia" },
+            { label: "Periodoncia", value: "Periodoncia" },
+            { label: "Estética", value: "Estética" },
+            { label: "Prostodoncia", value: "Prostodoncia" },
+          ]}
+          placeholder={{ label: "Selecciona una categoría", value: null }}
+          style={{
+            inputAndroid: {
+              backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+              borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+              color: colorScheme === 'dark' ? '#fff' : '#000',
+              padding: 10,
+              borderRadius: 8,
+              marginBottom: 10,
+            },
+            inputIOS: {
+              backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+              borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+              color: colorScheme === 'dark' ? '#fff' : '#000',
+              padding: 10,
+              borderRadius: 8,
+              marginBottom: 10,
+            },
+          }}
+        />
 
-        <Text style={styles.filterLabel}>Tipo:</Text>
-        <Picker
-          style={styles.picker}
-          selectedValue={tipoFilter}
-          onValueChange={setTipoFilter}
-        >
-          <Picker.Item label="Todos" value="" />
-          <Picker.Item label="Anuncio" value="Anuncio" />
-          <Picker.Item label="Consulta" value="Consulta" />
-          <Picker.Item label="Misceláneo" value="Misceláneo" />
-        </Picker>
+        <Text style={[styles.filterLabel, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>Tipo:</Text>
+        <RNPickerSelect
+          onValueChange={(value) => setTipoFilter(value)}
+          items={[
+            { label: "Todos", value: "" },
+            { label: "Anuncio", value: "Anuncio" },
+            { label: "Consulta", value: "Consulta" },
+            { label: "Misceláneo", value: "Misceláneo" },
+          ]}
+          placeholder={{ label: "Selecciona un tipo", value: null }}
+          style={{
+            inputAndroid: {
+              backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+              borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+              color: colorScheme === 'dark' ? '#fff' : '#000',
+              padding: 10,
+              borderRadius: 8,
+              marginBottom: 10,
+            },
+            inputIOS: {
+              backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+              borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+              color: colorScheme === 'dark' ? '#fff' : '#000',
+              padding: 10,
+              borderRadius: 8,
+              marginBottom: 10,
+            },
+          }}
+        />
       </View>
 
       {/* Lista de Foros */}
@@ -104,13 +160,31 @@ const ListaForos: React.FC = () => {
         data={filteredForos}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.foroItem}>
-            <Text style={styles.foroTitle}>{item.title}</Text>
-            <Text style={styles.foroInfo}>
-              Autor: {item.author} | Categoría: {item.category} | Tipo: {item.type}
+          <View
+            style={[
+              styles.foroItem,
+              {
+                backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+                shadowColor: colorScheme === 'dark' ? '#000' : '#ccc',
+              },
+            ]}
+          >
+            <Text style={[styles.foroTitle, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>
+              {item.title}
             </Text>
-            <Text style={styles.foroDate}>Fecha: {item.date}</Text>
-            <TouchableOpacity style={styles.verForoButton} onPress={() => handleVerForo(item.id)}>
+            <Text style={[styles.foroInfo, { color: colorScheme === 'dark' ? '#bbb' : '#555' }]}>
+              Autor: {item.author || "Desconocido"} | Categoría: {item.category} | Tipo: {item.type}
+            </Text>
+            <Text style={[styles.foroDate, { color: colorScheme === 'dark' ? '#aaa' : '#888' }]}>
+              Fecha: {item.date}
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.verForoButton,
+                { backgroundColor: colorScheme === 'dark' ? '#761FE0' : '#007BFF' },
+              ]}
+              onPress={() => handleVerForo(item.id)}
+            >
               <Text style={styles.verForoButtonText}>Ver Foro</Text>
             </TouchableOpacity>
           </View>
@@ -124,7 +198,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#F9F9F9",
   },
   title: {
     fontSize: 24,
@@ -142,11 +215,9 @@ const styles = StyleSheet.create({
   },
   filterInput: {
     borderWidth: 1,
-    borderColor: "#CCC",
     padding: 10,
     borderRadius: 8,
     marginBottom: 10,
-    backgroundColor: "#FFF",
   },
   picker: {
     height: 50,
@@ -154,14 +225,11 @@ const styles = StyleSheet.create({
     borderColor: "#CCC",
     borderRadius: 8,
     marginBottom: 10,
-    backgroundColor: "#FFF",
   },
   foroItem: {
-    backgroundColor: "#FFF",
     padding: 15,
     borderRadius: 8,
     marginBottom: 15,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -174,16 +242,13 @@ const styles = StyleSheet.create({
   },
   foroInfo: {
     fontSize: 14,
-    color: "#555",
     marginBottom: 5,
   },
   foroDate: {
     fontSize: 14,
-    color: "#888",
     marginBottom: 10,
   },
   verForoButton: {
-    backgroundColor: "#007BFF",
     padding: 10,
     borderRadius: 8,
     alignItems: "center",

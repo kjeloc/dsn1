@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native';
 import { db } from '../../../config/firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -10,21 +10,30 @@ const ViewWorkgroupDetails: React.FC = () => {
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
   const [workgroup, setWorkgroup] = useState<Workgroup | null>(null);
   const [loading, setLoading] = useState(true);
+  const colorScheme = useColorScheme(); // Detectar el esquema de color del dispositivo
 
   useEffect(() => {
     const fetchWorkgroup = async () => {
       if (!groupId) return;
       try {
+        console.log("Buscando detalles del grupo con ID:", groupId); // Depuración
         const docRef = doc(db, 'workgroups', groupId);
         const docSnap = await getDoc(docRef);
+
         if (docSnap.exists()) {
-            setWorkgroup({
-                id: docSnap.id,
-                name: docSnap.data().name || '',
-                owner: docSnap.data().owner || '',
-                admins: docSnap.data().admins || [],
-                members: docSnap.data().members || []
-              } as Workgroup);
+          const data = docSnap.data();
+          console.log("Datos encontrados en Firestore:", data); // Depuración
+
+          // Asegúrate de usar los nombres correctos de los campos en Firestore
+          setWorkgroup({
+            id: docSnap.id,
+            name: data.groupName || '', // Verifica si en Firestore es "groupName"
+            owner: data.ownerEmail || '', // Verifica si en Firestore es "ownerEmail"
+            admins: data.adminEmails || [], // Verifica si en Firestore es "adminEmails"
+            members: data.memberEmails || [] // Verifica si en Firestore es "memberEmails"
+          } as Workgroup);
+        } else {
+          console.error(`Documento no encontrado para el ID: ${groupId}`);
         }
       } catch (error) {
         console.error('Error fetching workgroup details:', error);
@@ -32,39 +41,49 @@ const ViewWorkgroupDetails: React.FC = () => {
         setLoading(false);
       }
     };
-
     fetchWorkgroup();
   }, [groupId]);
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text>Cargando detalles del grupo...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colorScheme === 'dark' ? '#121212' : '#F9F9F9' }]}>
+        <Text style={{ color: colorScheme === 'dark' ? '#fff' : '#000' }}>Cargando detalles del grupo...</Text>
       </View>
     );
   }
 
   if (!workgroup) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text>Grupo de trabajo no encontrado.</Text>
+      <View style={[styles.emptyContainer, { backgroundColor: colorScheme === 'dark' ? '#121212' : '#F9F9F9' }]}>
+        <Text style={{ color: colorScheme === 'dark' ? '#fff' : '#000' }}>Grupo de trabajo no encontrado.</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Detalles del Grupo de Trabajo</Text>
-      <Text style={styles.label}>Nombre:</Text>
-      <Text>{workgroup.name}</Text>
-      <Text style={styles.label}>Dueño:</Text>
-      <Text>{workgroup.owner}</Text>
-      <Text style={styles.label}>Administradores:</Text>
-      <Text>{workgroup.admins.join(', ')}</Text>
-      <Text style={styles.label}>Miembros:</Text>
-      <Text>{workgroup.members.join(', ')}</Text>
-      <TouchableOpacity onPress={() => router.back()}>
-        <Text style={styles.backButton}>Volver</Text>
+    <View style={[styles.container, { backgroundColor: colorScheme === 'dark' ? '#121212' : '#F9F9F9' }]}>
+      <Text style={[styles.title, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>Detalles del Grupo de Trabajo</Text>
+
+      <Text style={[styles.label, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>Nombre:</Text>
+      <Text style={{ color: colorScheme === 'dark' ? '#bbb' : '#333' }}>{workgroup.name}</Text>
+
+      <Text style={[styles.label, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>Dueño:</Text>
+      <Text style={{ color: colorScheme === 'dark' ? '#bbb' : '#333' }}>{workgroup.owner}</Text>
+
+      <Text style={[styles.label, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>Administradores:</Text>
+      <Text style={{ color: colorScheme === 'dark' ? '#bbb' : '#333' }}>{workgroup.admins.join(', ') || "Ninguno"}</Text>
+
+      <Text style={[styles.label, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>Miembros:</Text>
+      <Text style={{ color: colorScheme === 'dark' ? '#bbb' : '#333' }}>{workgroup.members.join(', ') || "Ninguno"}</Text>
+
+      <TouchableOpacity
+        style={[
+          styles.backButton,
+          { backgroundColor: colorScheme === 'dark' ? '#761FE0' : '#007BFF' },
+        ]}
+        onPress={() => router.back()}
+      >
+        <Text style={styles.backButtonText}>Volver</Text>
       </TouchableOpacity>
     </View>
   );
@@ -74,7 +93,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#F9F9F9',
   },
   title: {
     fontSize: 24,
@@ -90,10 +108,14 @@ const styles = StyleSheet.create({
   backButton: {
     marginTop: 20,
     padding: 10,
-    backgroundColor: '#007BFF',
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  backButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   loadingContainer: {
     flex: 1,

@@ -1,5 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image, Alert, Modal, Pressable,} from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+  Image,
+  Alert,
+  Modal,
+  Pressable,
+  useColorScheme,
+} from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { db } from "../../config/firebaseConfig";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -8,10 +20,13 @@ import axios from "axios";
 import * as ImageManipulator from "expo-image-manipulator";
 import { Ionicons } from "@expo/vector-icons"; // Importando el ícono de lápiz
 import { DentistData } from "../utils/types";
+import { useAppTheme } from "../Constants/Colors"; 
+
 
 const IMGUR_CLIENT_ID = "64c190c058b9f98";
 
 const ProfileDentist: React.FC = () => {
+   const theme = useAppTheme(); // Obtener el tema dinámico
   const { userId } = useLocalSearchParams();
   const [dentistData, setDentistData] = useState<DentistData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,6 +35,7 @@ const ProfileDentist: React.FC = () => {
   const [imageSelected, setImageSelected] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false); // Para mostrar el modal
+  const colorScheme = useColorScheme(); // Detectar el esquema de color del dispositivo
 
   useEffect(() => {
     const fetchDentistData = async () => {
@@ -141,155 +157,196 @@ const ProfileDentist: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007BFF" />
+        <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );
   }
 
   if (!dentistData) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>No se encontraron datos del dentista.</Text>
+      <View style={styles.emptyContainer}>
+        <Text style={{ color: colorScheme === "dark" ? "#fff" : "#000" }}>
+          No se encontraron datos del dentista.
+        </Text>
       </View>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollViewContainer}>
-      <Text style={styles.title}>Perfil del Dentista</Text>
+    <ScrollView
+      contentContainerStyle={[
+        styles.scrollViewContainer,
+        { backgroundColor: colorScheme === "dark" ? "#121212" : "#F9F9F9" },
+      ]}
+    >
+      {/* Título */}
+      <Text style={[styles.title, { color: colorScheme === "dark" ? "#fff" : "#000" }]}>
+        Perfil del Dentista
+      </Text>
 
-      {/* Imagen de perfil */}
-      <View style={styles.profileImageContainer}>
-        <Image
-          source={{ uri: uploadedImageUrl || dentistData.profilePicture }}
-          style={styles.profileImage}
-          resizeMode="cover"
-        />
-
-        {/* Botón de lápiz encima de la imagen */}
+       {/* Imagen de perfil */}
+            <View style={styles.profileImageContainer}>
+              <Image
+                source={{ uri: uploadedImageUrl || dentistData.profilePicture }}
+                style={styles.profileImage}
+                resizeMode="cover"
+              />
+        {/* Botón de edición de imagen */}
         <TouchableOpacity
           style={styles.editButton}
-          onPress={() => setModalVisible(true)} // Muestra el modal directamente al editar
+          onPress={() => setModalVisible(true)}
         >
-          <Ionicons name="pencil-outline" size={25} color="white" />
+          <Ionicons
+            name="pencil"
+            size={24}
+            color={colorScheme === "dark" ? "#fff" : "#000"}
+          />
         </TouchableOpacity>
       </View>
 
-      {/* Tarjetas con la información */}
+      {/* Tarjetas con información */}
       <View style={styles.cardContainer}>
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Nombre:</Text>
-          <Text style={styles.cardContent}>{dentistData.name}</Text>
+          <Text style={[styles.cardTitle, { color: colorScheme === "dark" ? "#fff" : "#000" }]}>
+            Nombre:
+          </Text>
+          <Text style={[styles.cardContent, { color: colorScheme === "dark" ? "#bbb" : "#555" }]}>
+            {dentistData.name || "No especificado"}
+          </Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Correo Electrónico:</Text>
-          <Text style={styles.cardContent}>{dentistData.email}</Text>
+          <Text style={[styles.cardTitle, { color: colorScheme === "dark" ? "#fff" : "#000" }]}>
+            Correo Electrónico:
+          </Text>
+          <Text style={[styles.cardContent, { color: colorScheme === "dark" ? "#bbb" : "#555" }]}>
+            {dentistData.email || "No especificado"}
+          </Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Fecha de Nacimiento:</Text>
-          <Text style={styles.cardContent}>{dentistData.birthdate}</Text>
+          <Text style={[styles.cardTitle, { color: colorScheme === "dark" ? "#fff" : "#000" }]}>
+            Fecha de Nacimiento:
+          </Text>
+          <Text style={[styles.cardContent, { color: colorScheme === "dark" ? "#bbb" : "#555" }]}>
+            {dentistData.birthdate || "No especificado"}
+          </Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Estado:</Text>
-          <Text style={styles.cardContent}>{dentistData.state}</Text>
+          <Text style={[styles.cardTitle, { color: colorScheme === "dark" ? "#fff" : "#000" }]}>
+            Estado:
+          </Text>
+          <Text style={[styles.cardContent, { color: colorScheme === "dark" ? "#bbb" : "#555" }]}>
+            {dentistData.state || "No especificado"}
+          </Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Consultorios Asignados:</Text>
+          <Text style={[styles.cardTitle, { color: colorScheme === "dark" ? "#fff" : "#000" }]}>
+            Consultorios Asignados:
+          </Text>
           {dentistData.dental_office.length > 0 ? (
             dentistData.dental_office.map((office, index) => (
-              <Text key={index} style={styles.cardContent}>
+              <Text
+                key={index}
+                style={[styles.cardContent, { color: colorScheme === "dark" ? "#bbb" : "#555" }]}
+              >
                 - {office}
               </Text>
             ))
           ) : (
-            <Text style={styles.cardContent}>
+            <Text style={[styles.cardContent, { color: colorScheme === "dark" ? "#bbb" : "#555" }]}>
               No hay consultorios asignados.
             </Text>
           )}
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Pacientes Asociados:</Text>
+          <Text style={[styles.cardTitle, { color: colorScheme === "dark" ? "#fff" : "#000" }]}>
+            Pacientes Asociados:
+          </Text>
           {dentistData.patients.length > 0 ? (
             dentistData.patients.map((patient, index) => (
-              <Text key={index} style={styles.cardContent}>
+              <Text
+                key={index}
+                style={[styles.cardContent, { color: colorScheme === "dark" ? "#bbb" : "#555" }]}
+              >
                 - {patient}
               </Text>
             ))
           ) : (
-            <Text style={styles.cardContent}>No hay pacientes asociados.</Text>
+            <Text style={[styles.cardContent, { color: colorScheme === "dark" ? "#bbb" : "#555" }]}>
+              No hay pacientes asociados.
+            </Text>
           )}
         </View>
       </View>
 
       {/* Modal con la previsualización y el botón de carga */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Previsualizar Imagen</Text>
-            <Image
-              source={{ uri: selectedImage || undefined }}
-              style={styles.modalImage}
-              resizeMode="contain"
-            />
-             <View style={styles.buttonsContainer}>
-              <TouchableOpacity
-                style={styles.cameraButton}
-                onPress={takePhoto}
-              >
-                <Text style={styles.buttonText}>Tomar Foto</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.cameraButton}
-                onPress={pickImage}
-              >
-                <Text style={styles.buttonText}>Escoger Foto</Text>
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity
-              style={styles.uploadButton}
-              onPress={uploadToImgur}
-              disabled={isUploading}
-            >
-              {isUploading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.uploadButtonText}>Subir Imagen</Text>
-              )}
-            </TouchableOpacity>
-            <Pressable
-              style={styles.closeButton}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={styles.closeButtonText}>Cerrar</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
+           <Modal
+             animationType="slide"
+             transparent={true}
+             visible={modalVisible}
+             onRequestClose={() => setModalVisible(false)}
+           >
+             <View style={[styles.modalOverlay, { backgroundColor: theme.modalBackground }]}>
+               <View style={[styles.modalContent, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                 <Text style={[styles.modalTitle, { color: theme.text }]}>Previsualizar Imagen</Text>
+                 <Image
+                   source={{ uri: selectedImage || undefined }}
+                   style={styles.modalImage}
+                   resizeMode="contain"
+                 />
+                 <View style={styles.buttonsContainer}>
+                   <TouchableOpacity
+                     style={[styles.cameraButton, { backgroundColor: theme.button }]}
+                     onPress={takePhoto}
+                   >
+                     <Text style={[styles.buttonText, { color: theme.text }]}>Tomar Foto</Text>
+                   </TouchableOpacity>
+                   <TouchableOpacity
+                     style={[styles.cameraButton, { backgroundColor: theme.button }]}
+                     onPress={pickImage}
+                   >
+                     <Text style={[styles.buttonText, { color: theme.text }]}>Escoger Foto</Text>
+                   </TouchableOpacity>
+                 </View>
+                 <TouchableOpacity
+                   style={[styles.uploadButton, { backgroundColor: theme.button }]}
+                   onPress={uploadToImgur}
+                   disabled={isUploading}
+                 >
+                   {isUploading ? (
+                     <ActivityIndicator size="small" color="#fff" />
+                   ) : (
+                     <Text style={[styles.uploadButtonText, { color: theme.text }]}>Subir Imagen</Text>
+                   )}
+                 </TouchableOpacity>
+                 <Pressable
+                   style={styles.closeButton}
+                   onPress={() => setModalVisible(false)}
+                 >
+                   <Text style={[styles.closeButtonText, { color: theme.text }]}>Cerrar</Text>
+                 </Pressable>
+               </View>
+             </View>
+           </Modal>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-  },
   scrollViewContainer: {
     padding: 16,
+    flexGrow: 1,
   },
   loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
@@ -310,24 +367,23 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 100,
     borderWidth: 5,
-    borderColor: "#007BFF",
   },
   editButton: {
     position: "absolute",
     bottom: 15,
     right: 80,
     left: 235,
-    backgroundColor: "rgba(14, 14, 14, 0.99)",
+    backgroundColor: "rgb(182, 105, 245)",
     borderRadius: 20,
     padding: 5,
   },
   cardContainer: {
     marginTop: 16,
+    width: "100%",
   },
   card: {
     marginBottom: 10,
     padding: 12,
-    backgroundColor: "#f7f7f7",
     borderRadius: 8,
     elevation: 1,
   },
@@ -338,7 +394,6 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     fontSize: 14,
-    color: "#555",
   },
   modalOverlay: {
     flex: 1,
@@ -363,24 +418,6 @@ const styles = StyleSheet.create({
     height: 200,
     marginBottom: 16,
   },
-  uploadButton: {
-    backgroundColor: "#28a745",
-    padding: 10,
-    borderRadius: 5,
-    marginBottom: -6,
-  },
-  uploadButtonText: {
-    color: "#fff",
-    fontSize: 16,
-  },
-  closeButton: {
-    marginTop: 10,
-    padding: 10,
-  },
-  closeButtonText: {
-    fontSize: 16,
-    color: "#007BFF",
-  },
   buttonsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -388,17 +425,33 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   cameraButton: {
-    backgroundColor: "#007BFF",
     padding: 10,
     borderRadius: 5,
-    marginTop: 10,
-    flex: 1,
     alignItems: "center",
-    marginRight: 4,
+    flex: 1,
+    marginHorizontal: 4,
   },
   buttonText: {
     color: "#fff",
     fontSize: 16,
+  },
+  uploadButton: {
+    backgroundColor: "#28a745",
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  uploadButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    textAlign: "center",
+  },
+  closeButton: {
+    padding: 10,
+  },
+  closeButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 

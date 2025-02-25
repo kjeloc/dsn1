@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { ScrollView, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { ScrollView, Text, TextInput, TouchableOpacity, StyleSheet, Alert, useColorScheme } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { db } from "../../../config/firebaseConfig";
 import { collection, addDoc, doc, getDoc } from "firebase/firestore";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Picker } from "@react-native-picker/picker";
+import RNPickerSelect from "react-native-picker-select"; // Importamos react-native-picker-select
 import dayjs from "dayjs";
 import { Forum } from "../../utils/types";
 
@@ -13,6 +13,7 @@ const CreateForum: React.FC = () => {
   const router = useRouter();
   const { control, handleSubmit, reset } = useForm<Forum>();
   const [authorEmail, setAuthorEmail] = useState("");
+  const colorScheme = useColorScheme(); // Detectar el esquema de color del dispositivo
 
   useEffect(() => {
     const fetchDentistData = async () => {
@@ -31,9 +32,8 @@ const CreateForum: React.FC = () => {
   }, [userId]);
 
   const onSubmit = async (data: Forum) => {
-    console.log("esto es "+ userId);
     if (!userId) {
-      Alert.alert("Error", "Usuario no identificado. "+ userId);
+      Alert.alert("Error", "Usuario no identificado.");
       return;
     }
     try {
@@ -52,15 +52,25 @@ const CreateForum: React.FC = () => {
   };
 
   return (
-    <ScrollView>
-      <Text style={styles.title}>Crear Nueva Publicación</Text>
+    <ScrollView style={[styles.container, { backgroundColor: colorScheme === 'dark' ? '#121212' : '#F9F9F9' }]}>
+      <Text style={[styles.title, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>Crear Nueva Publicación</Text>
+
+      {/* Campo de título */}
       <Controller
         control={control}
         rules={{ required: true }}
         render={({ field: { onChange, value } }) => (
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+                borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+                color: colorScheme === 'dark' ? '#fff' : '#000',
+              },
+            ]}
             placeholder="Título"
+            placeholderTextColor={colorScheme === 'dark' ? '#aaa' : '#888'}
             onChangeText={onChange}
             value={value}
           />
@@ -68,52 +78,101 @@ const CreateForum: React.FC = () => {
         name="title"
         defaultValue=""
       />
+
+      {/* Selector de tipo */}
       <Controller
         control={control}
         rules={{ required: true }}
         render={({ field: { onChange, value } }) => (
-          <Picker
-            selectedValue={value}
+          <RNPickerSelect
             onValueChange={onChange}
-            style={styles.input}
-          >
-            <Picker.Item label="Selecciona un tipo" value="" />
-            <Picker.Item label="Anuncio" value="Anuncio" />
-            <Picker.Item label="Consulta" value="Consulta" />
-            <Picker.Item label="Misceláneo" value="Misceláneo" />
-          </Picker>
+            items={[
+              { label: "Anuncio", value: "Anuncio" },
+              { label: "Consulta", value: "Consulta" },
+              { label: "Misceláneo", value: "Misceláneo" },
+            ]}
+            placeholder={{ label: "Selecciona un tipo", value: null }}
+            style={{
+              inputAndroid: {
+                backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+                borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+                color: colorScheme === 'dark' ? '#fff' : '#000',
+                padding: 10,
+                borderRadius: 8,
+                marginBottom: 15,
+              },
+              inputIOS: {
+                backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+                borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+                color: colorScheme === 'dark' ? '#fff' : '#000',
+                padding: 10,
+                borderRadius: 8,
+                marginBottom: 15,
+              },
+            }}
+          />
         )}
         name="type"
         defaultValue=""
       />
+
+      {/* Selector de categoría */}
       <Controller
         control={control}
         rules={{ required: true }}
         render={({ field: { onChange, value } }) => (
-          <Picker
-            selectedValue={value}
+          <RNPickerSelect
             onValueChange={onChange}
-            style={styles.input}
-          >
-            <Picker.Item label="Selecciona una categoría" value="" />
-            <Picker.Item label="General" value="General" />
-            <Picker.Item label="Ortodoncia" value="Ortodoncia" />
-            <Picker.Item label="Endodoncia" value="Endodoncia" />
-            <Picker.Item label="Periodoncia" value="Periodoncia" />
-            <Picker.Item label="Estética" value="Estética" />
-            <Picker.Item label="Prostodoncia" value="Prostodoncia" />
-          </Picker>
+            items={[
+              { label: "General", value: "General" },
+              { label: "Ortodoncia", value: "Ortodoncia" },
+              { label: "Endodoncia", value: "Endodoncia" },
+              { label: "Periodoncia", value: "Periodoncia" },
+              { label: "Estética", value: "Estética" },
+              { label: "Prostodoncia", value: "Prostodoncia" },
+            ]}
+            placeholder={{ label: "Selecciona una categoría", value: null }}
+            style={{
+              inputAndroid: {
+                backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+                borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+                color: colorScheme === 'dark' ? '#fff' : '#000',
+                padding: 10,
+                borderRadius: 8,
+                marginBottom: 15,
+              },
+              inputIOS: {
+                backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+                borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+                color: colorScheme === 'dark' ? '#fff' : '#000',
+                padding: 10,
+                borderRadius: 8,
+                marginBottom: 15,
+              },
+            }}
+          />
         )}
         name="category"
         defaultValue=""
       />
+
+      {/* Campo de contenido */}
       <Controller
         control={control}
         rules={{ required: true }}
         render={({ field: { onChange, value } }) => (
           <TextInput
-            style={[styles.input, styles.textArea]}
+            style={[
+              styles.input,
+              styles.textArea,
+              {
+                backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+                borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+                color: colorScheme === 'dark' ? '#fff' : '#000',
+              },
+            ]}
             placeholder="Contenido"
+            placeholderTextColor={colorScheme === 'dark' ? '#aaa' : '#888'}
             multiline
             numberOfLines={5}
             onChangeText={onChange}
@@ -123,13 +182,27 @@ const CreateForum: React.FC = () => {
         name="content"
         defaultValue=""
       />
+
+      {/* Campo de autor (solo lectura) */}
       <TextInput
-        style={styles.input}
+        style={[
+          styles.input,
+          {
+            backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+            borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+            color: colorScheme === 'dark' ? '#fff' : '#000',
+          },
+        ]}
         placeholder="Autor (Correo electrónico)"
         value={authorEmail}
         editable={false}
       />
-      <TouchableOpacity style={styles.button} onPress={handleSubmit(onSubmit)}>
+
+      {/* Botón de envío */}
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: colorScheme === 'dark' ? '#761FE0' : '#007BFF' }]}
+        onPress={handleSubmit(onSubmit)}
+      >
         <Text style={styles.buttonText}>Crear Publicación</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -140,7 +213,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#F9F9F9",
   },
   title: {
     fontSize: 24,
@@ -150,18 +222,15 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#CCC",
     padding: 10,
     borderRadius: 8,
     marginBottom: 15,
-    backgroundColor: "#FFF",
   },
   textArea: {
     height: 100,
     textAlignVertical: "top",
   },
   button: {
-    backgroundColor: "#007BFF",
     padding: 15,
     borderRadius: 8,
     alignItems: "center",

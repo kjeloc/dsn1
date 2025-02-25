@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, FlatList, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet,
+  KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, useColorScheme
 } from 'react-native';
 import { db } from "../../../config/firebaseConfig";
 import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
@@ -15,13 +15,13 @@ const CreateWorkgroupScreen: React.FC = () => {
   const [filteredMembers, setFilteredMembers] = useState<string[]>([]);
   const [availableDentists, setAvailableDentists] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [formData, setFormData] = useState<WorkgroupFormData>({
     groupName: '',
     ownerEmail: dentistEmail,
     adminEmails: [dentistEmail], // El dueño es automáticamente administrador
     memberEmails: [dentistEmail], // El dueño es automáticamente miembro
   });
+  const colorScheme = useColorScheme(); // Detectar el esquema de color del dispositivo
 
   useEffect(() => {
     const fetchDentists = async () => {
@@ -38,7 +38,6 @@ const CreateWorkgroupScreen: React.FC = () => {
         setLoading(false);
       }
     };
-
     fetchDentists();
   }, []);
 
@@ -57,7 +56,6 @@ const CreateWorkgroupScreen: React.FC = () => {
         return;
       }
     }
-
     if (!formData[field].includes(email)) {
       handleInputChange(field, [...formData[field], email]);
     }
@@ -68,12 +66,10 @@ const CreateWorkgroupScreen: React.FC = () => {
       alert('No puedes remover al dueño del grupo.');
       return;
     }
-
     if (field === 'memberEmails') {
       // Si removemos a un miembro, también se debe eliminar de administradores
       const updatedMembers = formData.memberEmails.filter(e => e !== email);
       const updatedAdmins = formData.adminEmails.filter(e => e !== email);
-
       setFormData({
         ...formData,
         memberEmails: updatedMembers,
@@ -95,29 +91,48 @@ const CreateWorkgroupScreen: React.FC = () => {
   };
 
   if (loading) {
-    return <Text>Cargando...</Text>;
+    return (
+      <View style={[styles.container, { backgroundColor: colorScheme === 'dark' ? '#121212' : '#F9F9F9' }]}>
+        <Text style={{ color: colorScheme === 'dark' ? '#fff' : '#000' }}>Cargando...</Text>
+      </View>
+    );
   }
 
   return (
     <KeyboardAvoidingView 
-      style={styles.container} 
+      style={[styles.container, { backgroundColor: colorScheme === 'dark' ? '#121212' : '#F9F9F9' }]} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.inner}>
-          <Text style={styles.title}>Crear Grupo de Trabajo</Text>
+          <Text style={[styles.title, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>Crear Grupo de Trabajo</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                borderColor: colorScheme === 'dark' ? '#444' : '#ccc',
+                backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+                color: colorScheme === 'dark' ? '#fff' : '#000',
+              },
+            ]}
             placeholder="Nombre del Grupo"
+            placeholderTextColor={colorScheme === 'dark' ? '#aaa' : '#888'}
             value={formData.groupName}
             onChangeText={(text) => handleInputChange('groupName', text)}
           />
-          <Text style={styles.label}>Dueño:</Text>
-          <Text style={styles.owner}>{dentistEmail}</Text>
-
+          <Text style={[styles.label, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>Dueño:</Text>
+          <Text style={[styles.owner, { backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#f0f0f0', color: colorScheme === 'dark' ? '#fff' : '#000' }]}>{dentistEmail}</Text>
           <TextInput
-            style={styles.searchInput}
+            style={[
+              styles.searchInput,
+              {
+                borderColor: colorScheme === 'dark' ? '#444' : '#ccc',
+                backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#f9f9f9',
+                color: colorScheme === 'dark' ? '#fff' : '#000',
+              },
+            ]}
             placeholder="Buscar miembro..."
+            placeholderTextColor={colorScheme === 'dark' ? '#aaa' : '#888'}
             value={searchMember}
             onChangeText={setSearchMember}
           />
@@ -127,7 +142,11 @@ const CreateWorkgroupScreen: React.FC = () => {
             contentContainerStyle={styles.listContainer}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={[styles.dentistItem, formData.memberEmails.includes(item) && styles.selectedItem]}
+                style={[
+                  styles.dentistItem,
+                  formData.memberEmails.includes(item) && styles.selectedItem,
+                  { borderColor: colorScheme === 'dark' ? '#444' : '#eee', backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF' },
+                ]}
                 onPress={() => {
                   formData.memberEmails.includes(item)
                     ? removeEmailFromArray('memberEmails', item)
@@ -135,14 +154,23 @@ const CreateWorkgroupScreen: React.FC = () => {
                 }}
                 disabled={item === dentistEmail} // El dueño no se puede eliminar
               >
-                <Text>{item} {item === dentistEmail ? '(Dueño)' : ''}</Text>
+                <Text style={{ color: colorScheme === 'dark' ? '#fff' : '#000' }}>
+                  {item} {item === dentistEmail ? '(Dueño)' : ''}
+                </Text>
               </TouchableOpacity>
             )}
           />
-
           <TextInput
-            style={styles.searchInput}
+            style={[
+              styles.searchInput,
+              {
+                borderColor: colorScheme === 'dark' ? '#444' : '#ccc',
+                backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#f9f9f9',
+                color: colorScheme === 'dark' ? '#fff' : '#000',
+              },
+            ]}
             placeholder="Buscar administrador..."
+            placeholderTextColor={colorScheme === 'dark' ? '#aaa' : '#888'}
             value={searchAdmin}
             onChangeText={setSearchAdmin}
           />
@@ -152,7 +180,11 @@ const CreateWorkgroupScreen: React.FC = () => {
             contentContainerStyle={styles.listContainer}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={[styles.dentistItem, formData.adminEmails.includes(item) && styles.selectedItem]}
+                style={[
+                  styles.dentistItem,
+                  formData.adminEmails.includes(item) && styles.selectedItem,
+                  { borderColor: colorScheme === 'dark' ? '#444' : '#eee', backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF' },
+                ]}
                 onPress={() => {
                   formData.adminEmails.includes(item)
                     ? removeEmailFromArray('adminEmails', item)
@@ -160,14 +192,22 @@ const CreateWorkgroupScreen: React.FC = () => {
                 }}
                 disabled={item === dentistEmail} // El dueño no se puede remover
               >
-                <Text>{item} {item === dentistEmail ? '(Dueño)' : ''}</Text>
+                <Text style={{ color: colorScheme === 'dark' ? '#fff' : '#000' }}>
+                  {item} {item === dentistEmail ? '(Dueño)' : ''}
+                </Text>
               </TouchableOpacity>
             )}
           />
-
-          <View style={styles.buttonContainer}>
-            <Button title="Crear Grupo" onPress={handleSubmit} />
-          </View>
+          {/* Botón personalizado */}
+          <TouchableOpacity
+            style={[
+              styles.customButton,
+              { backgroundColor: colorScheme === 'dark' ? '#761FE0' : '#007BFF' },
+            ]}
+            onPress={handleSubmit}
+          >
+            <Text style={styles.buttonText}>Crear Grupo</Text>
+          </TouchableOpacity>
         </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
@@ -178,20 +218,29 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1, padding: 16, justifyContent: "space-between" },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
-  input: { height: 40, borderColor: '#ccc', borderWidth: 1, marginBottom: 12, paddingHorizontal: 8 },
+  input: { height: 40, borderWidth: 1, marginBottom: 12, paddingHorizontal: 8, borderRadius: 8 },
   label: { fontSize: 16, fontWeight: 'bold', marginTop: 16 },
-  owner: { padding: 12, backgroundColor: '#f0f0f0', marginBottom: 12 },
+  owner: { padding: 12, marginBottom: 12, borderRadius: 8 },
   listContainer: { flexGrow: 1 },
-  dentistItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  dentistItem: { padding: 12, borderBottomWidth: 1, borderRadius: 8 },
   selectedItem: { backgroundColor: '#e0f7fa' },
-  buttonContainer: { marginBottom: 16 },
+  customButton: {
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 16,
+  },
+  buttonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
   searchInput: {
     height: 40,
-    borderColor: '#ccc',
     borderWidth: 1,
     marginBottom: 12,
     paddingHorizontal: 8,
-    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
   },
 });
 

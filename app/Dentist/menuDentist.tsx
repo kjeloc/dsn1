@@ -280,11 +280,6 @@ const MenuDentist: React.FC = () => {
       onPress: () => router.push(`/Dentist/Appointment/addAppointment?userId=${userId}`),
     },
     {
-      icon: "person",
-      label: "Perfil",
-      onPress: () => router.push(`/Dentist/ProfileDentist?userId=${userId}`),
-    },
-    {
       icon: "chatbubbles",
       label: "Ir al Chat",
       onPress: () => router.push(`/Chat/ChatListScreen?userId=${userId}`),
