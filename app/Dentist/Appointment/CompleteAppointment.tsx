@@ -63,50 +63,50 @@ const CompleteAppointment: React.FC = () => {
   };
 
   const onSubmit = async (data: Appointment) => {
-    if (!userId) {
-      Alert.alert("Error", "Usuario no identificado.");
-      return;
-    }
-    try {
-      // Buscar el ID del paciente basado en su correo electrónico
-      const patientsQuery = await getDocs(
-        query(collection(db, "userTest"), where("email", "==", data.patientEmail))
-      );
-      if (patientsQuery.empty) {
-        Alert.alert("Error", "No se encontró al paciente con el correo proporcionado.");
+      if (!userId) {
+        Alert.alert("Error", "Usuario no identificado.");
         return;
       }
-      const patientDoc = patientsQuery.docs[0];
-      const patientId = patientDoc.id;
+      try {
+        // Buscar el ID del paciente basado en su correo electrónico
+        const patientsQuery = await getDocs(
+          query(collection(db, "userTest"), where("email", "==", patientEmail))
+        );
+        if (patientsQuery.empty) {
+          Alert.alert("Error", "No se encontró al paciente con el correo proporcionado.");
+          return;
+        }
+        const patientDoc = patientsQuery.docs[0];
+        const patientId = patientDoc.id;
   
-      // Guardar la cita en la subcolección del dentista
-      await addDoc(collection(db, "userTest", userId as string, "appointments"), {
-        patientEmail: data.patientEmail,
-        date: date.toISOString().split("T")[0],
-        hour: hour,
-        reason: data.reason,
-        dentalOffice: data.dentalOffice,
-        dentistEmail: dentistEmail,
-      });
+        // Guardar la cita en la subcolección del dentista
+        await addDoc(collection(db, "userTest", userId as string, "appointments"), {
+          patientEmail: patientEmail,
+          date: date.toISOString().split("T")[0],
+          hour: hour,
+          reason: data.reason,
+          dentalOffice: data.dentalOffice,
+          dentistEmail: dentistEmail,
+        });
   
-      // Guardar la cita en la subcolección del paciente
-      await addDoc(collection(db, "userTest", patientId, "appointments"), {
-        patientEmail: data.patientEmail,
-        date: date.toISOString().split("T")[0],
-        hour: hour,
-        reason: data.reason,
-        dentalOffice: data.dentalOffice,
-        dentistEmail: dentistEmail,
-      });
+        // Guardar la cita en la subcolección del paciente
+        await addDoc(collection(db, "userTest", patientId, "appointments"), {
+          patientEmail: patientEmail,
+          date: date.toISOString().split("T")[0],
+          hour: hour,
+          reason: data.reason,
+          dentalOffice: data.dentalOffice,
+          dentistEmail: dentistEmail,
+        });
   
-      reset();
-      Alert.alert("Cita agregada", "La cita se ha guardado correctamente.");
-      router.back();
-    } catch (error) {
-      console.error("Error al agregar la cita:", error);
-      Alert.alert("Error", "No se pudo guardar la cita. Inténtalo de nuevo.");
-    }
-  };
+        reset();
+        Alert.alert("Cita agregada", "La cita se ha guardado correctamente.");
+        router.back();
+      } catch (error) {
+        console.error("Error al agregar la cita:", error);
+        Alert.alert("Error", "No se pudo guardar la cita. Inténtalo de nuevo.");
+      }
+    };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -164,28 +164,36 @@ const CompleteAppointment: React.FC = () => {
       />
 
       {/* Selector de consultorios */}
-      <RNPickerSelect
-        onValueChange={(value) => {}}
-        items={dentalOffices.map((office) => ({ label: office, value: office }))}
-        placeholder={{ label: "Selecciona un consultorio", value: null }}
-        style={{
-          inputAndroid: {
-            backgroundColor: colorScheme === "dark" ? "#1e1e1e" : "#FFF",
-            borderColor: colorScheme === "dark" ? "#444" : "#CCC",
-            color: colorScheme === "dark" ? "#fff" : "#000",
-            padding: 10,
-            borderRadius: 8,
-            marginBottom: 15,
-          },
-          inputIOS: {
-            backgroundColor: colorScheme === "dark" ? "#1e1e1e" : "#FFF",
-            borderColor: colorScheme === "dark" ? "#444" : "#CCC",
-            color: colorScheme === "dark" ? "#fff" : "#000",
-            padding: 10,
-            borderRadius: 8,
-            marginBottom: 15,
-          },
-        }}
+      <Controller
+        control={control}
+        rules={{ required: true }}
+        render={({ field: { onChange, value } }) => (
+          <RNPickerSelect
+            onValueChange={onChange}
+            items={dentalOffices.map((office) => ({ label: office, value: office }))}
+            placeholder={{ label: "Selecciona un consultorio", value: null }}
+            style={{
+              inputAndroid: {
+                backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+                borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+                color: colorScheme === 'dark' ? '#fff' : '#000',
+                padding: 10,
+                borderRadius: 8,
+                marginBottom: 15,
+              },
+              inputIOS: {
+                backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFF',
+                borderColor: colorScheme === 'dark' ? '#444' : '#CCC',
+                color: colorScheme === 'dark' ? '#fff' : '#000',
+                padding: 10,
+                borderRadius: 8,
+                marginBottom: 15,
+              },
+            }}
+          />
+        )}
+        name="dentalOffice"
+        defaultValue=""
       />
 
       {/* Campo de motivo */}
