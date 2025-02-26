@@ -14,6 +14,7 @@ export interface UserAdmin {
     name: string;
     email: string;
     rol: string;
+    state?: string;
 }
 
 export interface Chat {
