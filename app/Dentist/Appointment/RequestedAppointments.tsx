@@ -10,7 +10,8 @@ import {
 } from "react-native";
 import { collection, query, where, getDocs, doc, updateDoc,getDoc } from "firebase/firestore";
 import { db } from "../../../config/firebaseConfig";
-import { useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
+
 
 interface AppointmentRequest {
   id: string;
@@ -22,6 +23,7 @@ interface AppointmentRequest {
 }
 
 const RequestedAppointments: React.FC = () => {
+    const router = useRouter();
   const { userId } = useLocalSearchParams();
   const [appointments, setAppointments] = useState<AppointmentRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,15 +62,15 @@ const RequestedAppointments: React.FC = () => {
     fetchAppointments();
   }, [userId]);
 
-  const handleUpdateStatus = async (appointmentId: string, newStatus: string) => {
+  const handleUpdateStatus = async (appointmentId: string, newStatus: string, patientEmail: string) => {
     try {
       const appointmentRef = doc(db, "Appointment_request", appointmentId);
       await updateDoc(appointmentRef, { status: newStatus });
       Alert.alert("Éxito", `La cita ha sido ${newStatus === "Atendida" ? "aceptada" : "rechazada"}.`);
-      // Refrescar la lista de citas
-      setAppointments((prev) =>
-        prev.filter((appointment) => appointment.id !== appointmentId)
-      );
+      if (newStatus === "Atendida") {
+        router.push(`/Dentist/Appointment/CompleteAppointment?userId=${userId}&patientEmail=${patientEmail}`);
+      }
+      setAppointments((prev) => prev.filter((appointment) => appointment.id !== appointmentId));
     } catch (error) {
       console.error("Error al actualizar el estado de la cita:", error);
       Alert.alert("Error", "No se pudo actualizar el estado de la cita.");
@@ -111,14 +113,14 @@ const RequestedAppointments: React.FC = () => {
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={[styles.button, styles.acceptButton]}
-                onPress={() => handleUpdateStatus(item.id, "Atendida")}
+                onPress={() => handleUpdateStatus(item.id, "Atendida",item.patientEmail)}
               >
                 <Text style={styles.buttonText}>Aceptar</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.button, styles.rejectButton]}
-                onPress={() => handleUpdateStatus(item.id, "Rechazada")}
+                onPress={() => handleUpdateStatus(item.id, "Rechazada",item.patientEmail)}
               >
                 <Text style={styles.buttonText}>Rechazar</Text>
               </TouchableOpacity>
