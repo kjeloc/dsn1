@@ -117,6 +117,7 @@ export interface User {
     name: string;
     email: string;
     birthdate: string;
+    dentists?: string[];
     age?: number;
     appointments: {
       date: string;
@@ -160,5 +161,13 @@ export interface Chat {
   otherParticipantName?: string; // Nombre del otro participante (opcional)
   lastMessage?: string; // Último mensaje (opcional)
   lastMessageTime?: string; // Hora del último mensaje (opcional)
+}
+
+export interface AppointmentRequest {
+  date: string; // Fecha actual en formato yyyy-mm-dd (ineditable)
+  dentistEmail: string; // Correo del dentista seleccionado por el paciente
+  patientEmail: string; // Correo del paciente (ineditable)
+  reason: string; // Motivo de la cita, escrito por el paciente
+  status: "En espera"; // Estado inicial ineditable
 }
 export default {};

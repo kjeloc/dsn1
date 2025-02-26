@@ -302,7 +302,7 @@ const MenuPatient: React.FC = () => {
         <CardWithBackground
           title="Ir a la Gestión de Citas"
           imageSource={require("../../assets/images/chequeo-dental.png")} // Reemplaza con tu imagen
-          onPress={() => router.push(`/Patient/Maps/DentisListScreen?userId=${userId}`)}
+          onPress={() => router.push(`/Patient/Apointment/RequestAppointment?userId=${userId}`)}
         />
 
 

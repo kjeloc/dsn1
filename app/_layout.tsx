@@ -28,6 +28,7 @@ export default function RootLayout() {
         <Stack.Screen name="ViewWorkgroupsScreen" options={{ title: 'Ver Grupo de Trabajo' }} />
         <Stack.Screen name="ViewWorkgroupDetails" options={{ title: 'Detalles Grupo de Trabajo' }} />
         <Stack.Screen name="GroupChatScreen" options={{ title: 'Chat Grupo de Trabajo' }} />
+        <Stack.Screen name="RequestAppointment" options={{ title: 'Solicitar Cita' }} />
       </Stack>
     </ThemeProvider>
   );

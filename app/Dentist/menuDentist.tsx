@@ -313,6 +313,14 @@ const MenuDentist: React.FC = () => {
         }),
     },
     {
+      icon: "calendar-outline",
+      label: "Citas Solicitadas",
+      onPress: () =>
+        router.push(
+          `/Dentist/Appointment/RequestedAppointments?dentistEmail=${dentistEmail}&userId=${userId}`
+        ),
+    },
+    {
       icon: "calendar",
       label: "Agregar Cita",
       onPress: () => router.push(`/Dentist/Appointment/addAppointment?userId=${userId}`),
@@ -346,6 +354,7 @@ const MenuDentist: React.FC = () => {
           `/Dentist/WorkGroup/ViewWorkgroupsScreen?dentistEmail=${dentistEmail}&userId=${userId}`
         ),
     },
+   
   ];
 
   return (
