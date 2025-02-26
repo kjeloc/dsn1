@@ -7,47 +7,79 @@ import {
   ScrollView,
   ActivityIndicator,
   useColorScheme,
+  Alert,
 } from "react-native";
 import { db } from "../../config/firebaseConfig";
-import { collection, getDocs } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 import { UserAdmin } from "../utils/types";
 
 const MenuAdmin: React.FC = () => {
-  const [UserAdmins, setUserAdmins] = useState<UserAdmin[]>([]);
+  const [Users, setUsers] = useState<UserAdmin[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filteredUserAdmins, setFilteredUserAdmins] = useState<UserAdmin[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<UserAdmin[]>([]);
   const colorScheme = useColorScheme(); // Detectar el esquema de color del dispositivo
 
   useEffect(() => {
-    const fetchUserAdmins = async () => {
+    const fetchUsers = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, "UserAdminTest"));
-        const UserAdminList: UserAdmin[] = [];
+        const querySnapshot = await getDocs(collection(db, "userTest"));
+        const UserList: UserAdmin[] = [];
         querySnapshot.forEach((doc) => {
-          const UserAdminData = doc.data();
-          UserAdminList.push({
+          const UserData = doc.data();
+          UserList.push({
             id: doc.id,
-            name: UserAdminData.name || "Sin nombre",
-            email: UserAdminData.email || "Sin correo",
-            rol: UserAdminData.rol || "Rol desconocido",
+            name: UserData.name || "Sin nombre",
+            email: UserData.email || "Sin correo",
+            rol: UserData.rol || "Rol desconocido",
+            state: UserData.state || "Activo", // Asignar 'Activo' si no existe el estado
           });
         });
-        setUserAdmins(UserAdminList);
-        setFilteredUserAdmins(UserAdminList);
+        setUsers(UserList);
+        setFilteredUsers(UserList);
       } catch (error) {
         console.error("Error al obtener los usuarios:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchUserAdmins();
+    fetchUsers();
   }, []);
 
-  const filterUserAdminsByRole = (role: string) => {
+  const filterUsersByRole = (role: string) => {
     if (role === "all") {
-      setFilteredUserAdmins(UserAdmins);
+      setFilteredUsers(Users);
     } else {
-      setFilteredUserAdmins(UserAdmins.filter((UserAdmin) => UserAdmin.rol === role));
+      setFilteredUsers(Users.filter((UserAdmin) => UserAdmin.rol === role));
+    }
+  };
+
+  const changeUserState = async (userId: string, currentState: string) => {
+    try {
+      // Determinar el nuevo estado
+      const states = ["Activo", "Inactivo", "Prueba"];
+      const currentIndex = states.indexOf(currentState);
+      const newState = states[(currentIndex + 1) % states.length];
+
+      // Actualizar el estado local
+      const updatedUsers = Users.map((user) =>
+        user.id === userId ? { ...user, state: newState } : user
+      );
+      setUsers(updatedUsers);
+      setFilteredUsers(updatedUsers);
+
+      // Actualizar el estado en Firestore
+      const userDocRef = doc(db, "userTest", userId);
+      await updateDoc(userDocRef, { state: newState });
+
+      Alert.alert("Estado actualizado", `El estado del usuario ha sido cambiado a ${newState}`);
+    } catch (error) {
+      console.error("Error al actualizar el estado del usuario:", error);
+      Alert.alert("Error", "No se pudo actualizar el estado del usuario");
     }
   };
 
@@ -63,22 +95,22 @@ const MenuAdmin: React.FC = () => {
     switch (role) {
       case "Admin":
         return [
-          styles.UserAdminCard,
-          { backgroundColor: colorScheme === "dark" ? "#333333" : "#D3D3D3" }, // Gris oscuro o claro para Admin
+          styles.UserCard,
+          { backgroundColor: colorScheme === "dark" ? "#333333" : "#D3D3D3" },
         ];
       case "Dentist":
         return [
-          styles.UserAdminCard,
-          { backgroundColor: colorScheme === "dark" ? "#2E4053" : "#ADD8E6" }, // Azul oscuro o claro para Dentist
+          styles.UserCard,
+          { backgroundColor: colorScheme === "dark" ? "#2E4053" : "#ADD8E6" },
         ];
       case "Patient":
         return [
-          styles.UserAdminCard,
-          { backgroundColor: colorScheme === "dark" ? "#34495E" : "#B0C4DE" }, // Azul grisáceo oscuro o claro para Patient
+          styles.UserCard,
+          { backgroundColor: colorScheme === "dark" ? "#34495E" : "#B0C4DE" },
         ];
       default:
         return [
-          styles.UserAdminCard,
+          styles.UserCard,
           { backgroundColor: colorScheme === "dark" ? "#121212" : "#FFFFFF" },
         ];
     }
@@ -99,7 +131,6 @@ const MenuAdmin: React.FC = () => {
       >
         Menú de Administrador
       </Text>
-
       {/* Botones de Filtro */}
       <View style={styles.filterContainer}>
         <TouchableOpacity
@@ -107,7 +138,7 @@ const MenuAdmin: React.FC = () => {
             styles.filterButton,
             { backgroundColor: colorScheme === "dark" ? "#761FE0" : "#007BFF" },
           ]}
-          onPress={() => filterUserAdminsByRole("all")}
+          onPress={() => filterUsersByRole("all")}
         >
           <Text style={styles.filterText}>Todos</Text>
         </TouchableOpacity>
@@ -116,7 +147,7 @@ const MenuAdmin: React.FC = () => {
             styles.filterButton,
             { backgroundColor: colorScheme === "dark" ? "#761FE0" : "#007BFF" },
           ]}
-          onPress={() => filterUserAdminsByRole("Admin")}
+          onPress={() => filterUsersByRole("Admin")}
         >
           <Text style={styles.filterText}>Administradores</Text>
         </TouchableOpacity>
@@ -125,7 +156,7 @@ const MenuAdmin: React.FC = () => {
             styles.filterButton,
             { backgroundColor: colorScheme === "dark" ? "#761FE0" : "#007BFF" },
           ]}
-          onPress={() => filterUserAdminsByRole("Dentist")}
+          onPress={() => filterUsersByRole("Dentist")}
         >
           <Text style={styles.filterText}>Dentistas</Text>
         </TouchableOpacity>
@@ -134,22 +165,18 @@ const MenuAdmin: React.FC = () => {
             styles.filterButton,
             { backgroundColor: colorScheme === "dark" ? "#761FE0" : "#007BFF" },
           ]}
-          onPress={() => filterUserAdminsByRole("Patient")}
+          onPress={() => filterUsersByRole("Patient")}
         >
           <Text style={styles.filterText}>Pacientes</Text>
         </TouchableOpacity>
       </View>
-
       {/* Lista de Usuarios */}
       <ScrollView>
-        {filteredUserAdmins.map((UserAdmin) => (
-          <View
-            key={UserAdmin.id}
-            style={getCardStyle(UserAdmin.rol)}
-          >
+        {filteredUsers.map((UserAdmin) => (
+          <View key={UserAdmin.id} style={getCardStyle(UserAdmin.rol)}>
             <Text
               style={[
-                styles.UserAdminName,
+                styles.UserName,
                 { color: colorScheme === "dark" ? "#FFFFFF" : "#000000" },
               ]}
             >
@@ -157,7 +184,7 @@ const MenuAdmin: React.FC = () => {
             </Text>
             <Text
               style={[
-                styles.UserAdminEmail,
+                styles.UserEmail,
                 { color: colorScheme === "dark" ? "#BBBBBB" : "#555555" },
               ]}
             >
@@ -165,18 +192,33 @@ const MenuAdmin: React.FC = () => {
             </Text>
             <Text
               style={[
-                styles.UserAdminRole,
+                styles.UserRole,
                 { color: colorScheme === "dark" ? "#AAAAAA" : "#888888" },
               ]}
             >
               Rol: {UserAdmin.rol}
             </Text>
+            <Text
+              style={[
+                styles.UserState,
+                { color: colorScheme === "dark" ? "#CCCCCC" : "#333333" },
+              ]}
+            >
+              Estado: {UserAdmin.state}
+            </Text>
+            <TouchableOpacity
+              style={styles.changeStateButton}
+              onPress={() => changeUserState(UserAdmin.id, UserAdmin.state ?? "Activo")}
+            >
+              <Text style={styles.changeStateButtonText}>Cambiar Estado</Text>
+            </TouchableOpacity>
           </View>
         ))}
       </ScrollView>
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -209,7 +251,12 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "bold",
   },
-  UserAdminCard: {
+  UserState: {
+    fontSize: 14,
+    fontWeight: "bold",
+    marginTop: 8,
+  },
+  UserCard: {
     padding: 15,
     borderRadius: 8,
     marginBottom: 10,
@@ -219,17 +266,28 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  UserAdminName: {
+  UserName: {
     fontSize: 18,
     fontWeight: "bold",
   },
-  UserAdminEmail: {
+  UserEmail: {
     fontSize: 14,
   },
-  UserAdminRole: {
+  UserRole: {
     fontSize: 14,
     fontStyle: "italic",
     marginTop: 5,
+  },changeStateButton: {
+    backgroundColor: "#007BFF",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+    marginTop: 8,
+  },
+  changeStateButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
   },
 });
 
