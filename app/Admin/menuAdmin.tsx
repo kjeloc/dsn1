@@ -17,6 +17,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { UserAdmin } from "../utils/types";
+import { router } from "expo-router";
 
 const MenuAdmin: React.FC = () => {
   const [Users, setUsers] = useState<UserAdmin[]>([]);
@@ -123,6 +124,16 @@ const MenuAdmin: React.FC = () => {
         { backgroundColor: colorScheme === "dark" ? "#121212" : "#F9F9F9" },
       ]}
     >
+      <TouchableOpacity
+                    onPress={() => router.push(`../TestNotifications`)}
+                  >
+                    <Text style={[
+          styles.title,
+          { color: colorScheme === "dark" ? "#FFFFFF" : "#000000" },
+        ]}>
+                      Probar Notis
+                    </Text>
+                  </TouchableOpacity>
       <Text
         style={[
           styles.title,

@@ -1,7 +1,22 @@
 import { Stack } from "expo-router";
 import { ThemeProvider } from "./ThemeContext";
+import * as Notifications from 'expo-notifications';
+import { requestNotificationPermissions } from './utils/NotificationService';
+import { useEffect } from "react";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+})
 
 export default function RootLayout() {
+  useEffect(() => {
+    // Solicitar permisos al iniciar la aplicación
+    requestNotificationPermissions();
+  }, []);
   return (
     <ThemeProvider>
       <Stack>
@@ -29,6 +44,7 @@ export default function RootLayout() {
         <Stack.Screen name="ViewWorkgroupDetails" options={{ title: 'Detalles Grupo de Trabajo' }} />
         <Stack.Screen name="GroupChatScreen" options={{ title: 'Chat Grupo de Trabajo' }} />
         <Stack.Screen name="RequestAppointment" options={{ title: 'Solicitar Cita' }} />
+        <Stack.Screen name="TestNotifications" options={{ title: 'Probar Notificaciones' }} />
       </Stack>
     </ThemeProvider>
   );
