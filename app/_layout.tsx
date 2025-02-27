@@ -1,12 +1,13 @@
 import { Stack } from "expo-router";
 import { ThemeProvider } from "./ThemeContext";
 import { StatusBar } from "expo-status-bar";
-import { useColorScheme } from "react-native";
+import { useColorScheme, View,StyleSheet } from "react-native";
 import * as Notifications from 'expo-notifications'
 import { useLastNotificationResponse } from "expo-notifications";
 import { useEffect } from "react";
 import { useRouter } from "expo-router";
-import { Appointment } from "./utils/types";
+import { Appointment } from "./utils/types";import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -18,6 +19,7 @@ Notifications.setNotificationHandler({
 
 export default function RootLayout() {
   const colorScheme = useColorScheme(); 
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const lastNotificationResponse = useLastNotificationResponse();
 
@@ -37,7 +39,9 @@ export default function RootLayout() {
     }
   }, [lastNotificationResponse]);
   return (
-    <ThemeProvider>
+    <SafeAreaProvider>
+    <ThemeProvider >
+    <View style={[styles.container, { paddingTop: insets.top + 20, backgroundColor:colorScheme === "dark" ? "#121212" : "#ffffff" }]}>
       <StatusBar
         style={colorScheme === "dark" ? "light" : "dark"} // Texto claro en modo oscuro, texto oscuro en modo claro
         backgroundColor={colorScheme === "dark" ? "#121212" : "#ffffff"} // Fondo adaptado al modo
@@ -69,6 +73,14 @@ export default function RootLayout() {
         <Stack.Screen name="RequestAppointment" options={{ title: 'Solicitar Cita' }} />
         <Stack.Screen name="TestNotifications" options={{ title: 'Probar Notificaciones' }} />
       </Stack>
+      </View>
     </ThemeProvider>
+    </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
