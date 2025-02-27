@@ -132,6 +132,7 @@ export interface User {
     name: string;
     email: string;
     age?: number;
+    state?: string;
   }
   
   export interface WeatherData {

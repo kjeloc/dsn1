@@ -73,6 +73,7 @@ export default function RootLayout() {
         <Stack.Screen name="GroupChatScreen" options={{ title: 'Chat Grupo de Trabajo' }} />
         <Stack.Screen name="RequestAppointment" options={{ title: 'Solicitar Cita' }} />
         <Stack.Screen name="TestNotifications" options={{ title: 'Probar Notificaciones' }} />
+        <Stack.Screen name="RequestAppointment" options={{ title: 'Request Appointment' }} />
       </Stack>
       </View>
     </ThemeProvider>

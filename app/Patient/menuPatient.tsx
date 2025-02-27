@@ -82,6 +82,19 @@ const MenuPatient: React.FC = () => {
   }, [userId]);
   useEffect(() => {
     if (!userId) return;
+    // Consulta para escuchar cambios en el usuario
+    const userRef = doc(db, "userTest", userId as string);
+    const unsubscribeUser = onSnapshot(userRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const userData = docSnapshot.data() as UserData;
+        setUserData(userData);
+
+        // Verificar el estado del usuario
+        if (userData.state !== "Activo") {
+          router.replace("/Waiting");
+        }
+      }
+    });
     const appointmentsRef = collection(db, "userTest", userId as string, "appointments");
     const unsubscribe = onSnapshot(appointmentsRef, async (querySnapshot) => {
       querySnapshot.docChanges().forEach(async (change) => {
@@ -98,7 +111,10 @@ const MenuPatient: React.FC = () => {
       });
     });
 
-    return () => unsubscribe(); // Limpiar el listener al desmontar el componente
+    return () => {
+      unsubscribeUser();
+      unsubscribe();
+    }; // Limpiar el listener al desmontar el componente
   }, [userId]);
 
   // Función para registrar logs

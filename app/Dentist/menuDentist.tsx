@@ -12,7 +12,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient"; // Para el degradado
 import { Ionicons } from "@expo/vector-icons";
 import { db } from "../../config/firebaseConfig";
-import { collection, getDocs, doc, getDoc,addDoc } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc,addDoc, onSnapshot } from "firebase/firestore";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import dayjs from "dayjs";
 import { useColorScheme } from "react-native";
@@ -26,7 +26,7 @@ const MenuDentist: React.FC = () => {
     patientEmail: string;
     reason: string;
   }
-
+  
     // Función para registrar logs
     const logAction = async (userId: string, action: string) => {
       try {
@@ -59,6 +59,22 @@ const MenuDentist: React.FC = () => {
   const cardBackgroundColor = isDark ? "#1E1E1E" : "#FFFFFF";
   const buttonBackgroundColor = isDark ? "#9959E8a3" : "#007BFF";
   const borderColor = isDark ? "#333333" : "#CCCCCC";
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const userRef = doc(db, "userTest", userId);
+    const unsubscribeUser = onSnapshot(userRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const userData = docSnapshot.data();
+        if (userData?.state !== "Activo") {
+          router.replace("/Waiting");
+        }
+      }
+    });
+
+    return () => unsubscribeUser(); // Limpiar el listener al desmontar el componente
+  }, [userId]);
 
   // Cargar citas del odontólogo
   const fetchAppointments = useCallback(async () => {

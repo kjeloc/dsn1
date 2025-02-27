@@ -115,34 +115,34 @@ const LoginScreen = () => {
       Alert.alert("Error", "Por favor, completa todos los campos.");
       return;
     }
-
     setIsLoading(true); // Bloquear los campos
-
     try {
       const usersRef = collection(db, "userTest");
       const q = query(usersRef, where("email", "==", email));
       const querySnapshot = await getDocs(q);
-
       if (querySnapshot.empty) {
         Alert.alert("Error", "Usuario no encontrado");
         return;
       }
-
       const userDoc = querySnapshot.docs[0];
       const userData = userDoc.data();
-
       if (userData.password !== password) {
         Alert.alert("Error", "Contraseña incorrecta");
         return;
       }
-
+  
+      // Verificar el estado del usuario
+      if (userData.state !== "Activo") {
+        router.replace("/Waiting");
+        return;
+      }
+  
       // Registrar log de inicio de sesión
       await logAction(userDoc.id, "Inicio de sesión");
-
       await getUserLocation(userDoc.id);
       const appointmentCount = await countAppointmentsForToday(userDoc.id);
       await scheduleNotification(appointmentCount);
-
+  
       if (userData.rol === "Admin") {
         router.replace("/Admin/menuAdmin");
       } else if (userData.rol === "Dentist") {
