@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Image, ImageBackground } from "react-native";
 import { db } from "../../config/firebaseConfig";
-import { collection, getDocs, doc, getDoc, addDoc } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, addDoc, query, onSnapshot, updateDoc } from "firebase/firestore";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import axios from "axios";
 import * as Location from "expo-location";
+import * as Notifications from "expo-notifications";
 import dayjs from "dayjs";
 import { API_CLIMA } from "../../config/apiConfig";
 import { Appointment, UserData, WeatherData } from "../utils/types";
@@ -23,6 +24,82 @@ const MenuPatient: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [showPreviousAppointments, setShowPreviousAppointments] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!userId) return;
+
+    // Consulta para escuchar citas del paciente
+    const appointmentsRef = collection(db, "userTest", userId as string, "appointments");
+    const q = query(appointmentsRef);
+
+    const unsubscribe = onSnapshot(appointmentsRef, async (querySnapshot) => {
+      querySnapshot.docChanges().forEach(async (change) => {
+        if (change.type === "added") {
+          const appointmentData = change.doc.data();
+          const appointmentId = appointmentData.id;
+          if (!appointmentData.notified) {
+            // Mostrar notificación local
+            Notifications.scheduleNotificationAsync({
+              content: {
+                title: "¡Cita agendada!",
+                body: `Tienes una Cita programada para el ${appointmentData.date} a las ${appointmentData.hour}.`,
+                data: { appointmentData,appointmentId,userId }, // Datos adicionales para redirección
+              },
+              trigger: null, // Notificación inmediata
+            });
+
+            // Redirigir al usuario si está activo
+            Alert.alert(
+              "Nueva Cita",
+              `Tienes una nueva cita programada para el ${appointmentData.date} a las ${appointmentData.hour}.`,
+              [
+                {
+                  text: "Ver Cita",
+                  onPress: () =>
+                    router.push({
+                      pathname: "/Patient/Apointment/ViewAppointmentPatient",
+                      params: { appointment: JSON.stringify({ id: appointmentId, ...appointmentData }) },
+                    }),
+                },
+                { text: "Cancelar", style: "cancel" },
+              ]
+            );
+            // Actualizar el atributo `notified` en Firestore
+            const appointmentRef = doc(db, "userTest", userId as string, "appointments", appointmentId);
+            await updateDoc(appointmentRef, { notified: true });
+          }
+        }
+      });
+      setLoading(false);
+    },
+      (error) => {
+        console.error("Error al escuchar citas:", error);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe(); // Limpiar el listener al desmontar el componente
+  }, [userId]);
+  useEffect(() => {
+    if (!userId) return;
+    const appointmentsRef = collection(db, "userTest", userId as string, "appointments");
+    const unsubscribe = onSnapshot(appointmentsRef, async (querySnapshot) => {
+      querySnapshot.docChanges().forEach(async (change) => {
+        if (change.type === "added" || change.type === "modified") {
+          const appointmentData = change.doc.data();
+          const appointmentId = change.doc.id;
+          // Verificar si la cita ya fue notificada
+          if (!appointmentData.notified) {
+            // Actualizar el atributo `notified` en Firestore
+            const appointmentRef = doc(db, "userTest", userId as string, "appointments", appointmentId);
+            await updateDoc(appointmentRef, { notified: true });
+          }
+        }
+      });
+    });
+
+    return () => unsubscribe(); // Limpiar el listener al desmontar el componente
+  }, [userId]);
 
   // Función para registrar logs
   const logAction = async (userId: string, action: string) => {
@@ -132,7 +209,7 @@ const MenuPatient: React.FC = () => {
       onPress={() =>
         router.push({
           pathname: "/Patient/Apointment/ViewAppointmentPatient",
-          params: { appointment: JSON.stringify(item) },
+          params: { appointment: JSON.stringify(item),userId },
         })
       } key={item.id}
     >
@@ -158,7 +235,7 @@ const MenuPatient: React.FC = () => {
         <ImageBackground source={imageSource} style={styles.cardButtomBackground} imageStyle={styles.imageStyle}>
           {/* Gradiente de desvanecimiento */}
           <LinearGradient colors={[theme.mode === "dark" ? "rgba(153, 152, 152, 0.29)" : "rgba(128, 128, 128, 0.32)", "transparent",
-]} 
+          ]}
             style={styles.gradientOverlay}
           />
           {/* Título de la tarjeta */}
@@ -205,7 +282,7 @@ const MenuPatient: React.FC = () => {
       <View style={styles.userSection}>
         {/* Gradiente de fondo */}
         <LinearGradient colors={[theme.mode === "dark" ? "rgba(73, 73, 73, 0.3)" : "rgba(163, 163, 163, 0.32)", "transparent",
-]}
+        ]}
           style={styles.gradientOverlay}
         />
         {/* Bienvenida y datos del usuario */}
@@ -219,15 +296,15 @@ const MenuPatient: React.FC = () => {
             style={styles.profileImage}
           />
         </View>
-            <TouchableOpacity
-              style={[styles.profileButton, { backgroundColor: buttonBackgroundColor }]}
-              onPress={() => router.push(`/Patient/ProfilePatient?userId=${userId}`)}
-            >
-              <Text style={[styles.profileButtonText]}>
-                Ir al perfil
-              </Text>
-            </TouchableOpacity>
-             {/* Botón de Logout */}
+        <TouchableOpacity
+          style={[styles.profileButton, { backgroundColor: buttonBackgroundColor }]}
+          onPress={() => router.push(`/Patient/ProfilePatient?userId=${userId}`)}
+        >
+          <Text style={[styles.profileButtonText]}>
+            Ir al perfil
+          </Text>
+        </TouchableOpacity>
+        {/* Botón de Logout */}
         <TouchableOpacity
           style={[
             styles.logoutButton,

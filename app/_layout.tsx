@@ -2,10 +2,11 @@ import { Stack } from "expo-router";
 import { ThemeProvider } from "./ThemeContext";
 import { StatusBar } from "expo-status-bar";
 import { useColorScheme } from "react-native";
-import * as Notifications from 'expo-notifications';
-import { requestNotificationPermissions } from './utils/NotificationService';
+import * as Notifications from 'expo-notifications'
+import { useLastNotificationResponse } from "expo-notifications";
 import { useEffect } from "react";
-
+import { useRouter } from "expo-router";
+import { Appointment } from "./utils/types";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -17,10 +18,24 @@ Notifications.setNotificationHandler({
 
 export default function RootLayout() {
   const colorScheme = useColorScheme(); 
+  const router = useRouter();
+  const lastNotificationResponse = useLastNotificationResponse();
+
   useEffect(() => {
-    // Solicitar permisos al iniciar la aplicación
-    requestNotificationPermissions();
-  }, []);
+    if (lastNotificationResponse?.notification?.request?.content?.data?.appointmentId) {
+      const appointmentId = lastNotificationResponse.notification.request.content.data.appointmentId;
+      const appointmentDatas = lastNotificationResponse.notification.request.content.data;
+      const userId = lastNotificationResponse.notification.request.content.data.userId;
+      // router.push({
+      //   pathname: "/Patient/Apointment/ViewAppointmentPatient",
+      //   params: { Appointment: JSON.stringify(appointmentDatas) },
+      // });
+      router.push({
+        pathname: "/Patient/Apointment/ViewAppointmentPatient",
+        params: { appointment: JSON.stringify({ id: appointmentId, ...appointmentDatas },userId) },
+      });
+    }
+  }, [lastNotificationResponse]);
   return (
     <ThemeProvider>
       <StatusBar

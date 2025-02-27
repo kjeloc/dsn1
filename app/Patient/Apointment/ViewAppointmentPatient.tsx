@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Alert, ScrollView } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import QRCode from 'react-native-qrcode-svg';
 import ViewShot from "react-native-view-shot";
 import * as FileSystem from "expo-file-system";
@@ -8,6 +8,7 @@ import * as Sharing from "expo-sharing";
 import { Appointment } from "../../utils/types";
 
 const ViewAppointmentPatient: React.FC = () => {
+  const { userId } = useLocalSearchParams();
   const params = useLocalSearchParams();
   const appointment = JSON.parse(params.appointment as string) as Appointment;
   const viewShotRef = React.useRef<ViewShot>(null);
@@ -42,6 +43,9 @@ const ViewAppointmentPatient: React.FC = () => {
       console.error("Error al guardar el código QR:", error);
       Alert.alert("Error", "No se pudo guardar el código QR.");
     }
+  };
+  const handleLogin = async () => {
+    router.push(`/Patient/menuPatient?userId=${userId}`);
   };
 
   return (
@@ -94,6 +98,10 @@ const ViewAppointmentPatient: React.FC = () => {
           <TouchableOpacity style={styles.saveButton} onPress={saveQRCode}>
             <Text style={styles.saveButtonText}>Guardar QR</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.saveButton} onPress={handleLogin}>
+            <Text style={styles.saveButtonText}>Volver</Text>
+          </TouchableOpacity>
+          
         </View>
       </View>
     </ScrollView>
