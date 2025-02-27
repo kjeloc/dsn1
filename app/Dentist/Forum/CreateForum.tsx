@@ -15,6 +15,22 @@ const CreateForum: React.FC = () => {
   const [authorEmail, setAuthorEmail] = useState("");
   const colorScheme = useColorScheme(); // Detectar el esquema de color del dispositivo
 
+
+  // Función para registrar logs
+  const logAction = async (userId: string, action: string) => {
+    try {
+      await addDoc(collection(db, "logs"), {
+        userId: userId,
+        action: action,
+        timestamp: new Date(), // Fecha y hora actual
+      });
+      console.log("Log registrado correctamente:", action);
+    } catch (error) {
+      console.error("Error al registrar el log:", error);
+    }
+  };
+
+
   useEffect(() => {
     const fetchDentistData = async () => {
       if (!userId) return;
@@ -42,6 +58,8 @@ const CreateForum: React.FC = () => {
         date: dayjs().format("YYYY-MM-DD"),
         author: authorEmail,
       });
+      // Registrar log de creación de foro
+      await logAction(userId as string, "Creación de foro");
       reset();
       Alert.alert("Publicación creada", "La publicación se ha guardado correctamente.");
       router.back();

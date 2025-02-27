@@ -56,6 +56,10 @@ const CompleteAppointment: React.FC = () => {
     fetchDentistData();
   }, [userId]);
 
+// Función para registrar logs
+
+
+
   const onDateChange = (event: any, selectedDate?: Date) => {
     const currentDate = selectedDate || date;
     setShowDatePicker(Platform.OS === "ios");
@@ -98,7 +102,6 @@ const CompleteAppointment: React.FC = () => {
           dentalOffice: data.dentalOffice,
           dentistEmail: dentistEmail,
         });
-  
         reset();
         Alert.alert("Cita agregada", "La cita se ha guardado correctamente.");
         router.back();

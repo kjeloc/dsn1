@@ -7,11 +7,11 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  useColorScheme,
 } from "react-native";
-import { collection, query, where, getDocs, doc, updateDoc,getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc, addDoc, getDoc } from "firebase/firestore";
 import { db } from "../../../config/firebaseConfig";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-
 
 interface AppointmentRequest {
   id: string;
@@ -23,10 +23,25 @@ interface AppointmentRequest {
 }
 
 const RequestedAppointments: React.FC = () => {
-    const router = useRouter();
+  const router = useRouter();
   const { userId } = useLocalSearchParams();
   const [appointments, setAppointments] = useState<AppointmentRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const colorScheme = useColorScheme(); // Detectar el esquema de color del dispositivo
+
+  // Función para registrar logs
+  const logAction = async (userId: string, action: string) => {
+    try {
+      await addDoc(collection(db, "logs"), {
+        userId: userId,
+        action: action,
+        timestamp: new Date(), // Fecha y hora actual
+      });
+      console.log("Log registrado correctamente:", action);
+    } catch (error) {
+      console.error("Error al registrar el log:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -66,6 +81,11 @@ const RequestedAppointments: React.FC = () => {
     try {
       const appointmentRef = doc(db, "Appointment_request", appointmentId);
       await updateDoc(appointmentRef, { status: newStatus });
+
+      // Registrar log según la acción realizada
+      const action = newStatus === "Atendida" ? "Cita aceptada" : "Cita rechazada";
+      await logAction(userId as string, action);
+
       Alert.alert("Éxito", `La cita ha sido ${newStatus === "Atendida" ? "aceptada" : "rechazada"}.`);
       if (newStatus === "Atendida") {
         router.push(`/Dentist/Appointment/CompleteAppointment?userId=${userId}&patientEmail=${patientEmail}`);
@@ -79,48 +99,55 @@ const RequestedAppointments: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
+      <View style={[styles.loadingContainer, { backgroundColor: colorScheme === "dark" ? "#121212" : "#fff" }]}>
+        <ActivityIndicator size="large" color={colorScheme === "dark" ? "#fff" : "#0000ff"} />
       </View>
     );
   }
 
   if (appointments.length === 0) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text>No hay citas solicitadas en espera.</Text>
+      <View style={[styles.emptyContainer, { backgroundColor: colorScheme === "dark" ? "#121212" : "#f5f5f5" }]}>
+        <Text style={{ color: colorScheme === "dark" ? "#fff" : "#000" }}>No hay citas solicitadas en espera.</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Citas Solicitadas</Text>
+    <View style={[styles.container, { backgroundColor: colorScheme === "dark" ? "#121212" : "#f5f5f5" }]}>
+      {/* Título */}
+      <Text style={[styles.title, { color: colorScheme === "dark" ? "#fff" : "#000" }]}>Citas Solicitadas</Text>
+
+      {/* Lista de Citas */}
       <FlatList
         data={appointments}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.appointmentCard}>
-            <Text style={styles.label}>Fecha:</Text>
-            <Text>{item.date}</Text>
-
-            <Text style={styles.label}>Paciente:</Text>
-            <Text>{item.patientEmail}</Text>
-
-            <Text style={styles.label}>Motivo:</Text>
-            <Text>{item.reason}</Text>
-
+          <View
+            style={[
+              styles.appointmentCard,
+              {
+                backgroundColor: colorScheme === "dark" ? "#1e1e1e" : "#fff",
+                shadowColor: colorScheme === "dark" ? "#000" : "#ccc",
+              },
+            ]}
+          >
+            <Text style={[styles.label, { color: colorScheme === "dark" ? "#fff" : "#000" }]}>Fecha:</Text>
+            <Text style={{ color: colorScheme === "dark" ? "#fff" : "#000" }}>{item.date}</Text>
+            <Text style={[styles.label, { color: colorScheme === "dark" ? "#fff" : "#000" }]}>Paciente:</Text>
+            <Text style={{ color: colorScheme === "dark" ? "#fff" : "#000" }}>{item.patientEmail}</Text>
+            <Text style={[styles.label, { color: colorScheme === "dark" ? "#fff" : "#000" }]}>Motivo:</Text>
+            <Text style={{ color: colorScheme === "dark" ? "#fff" : "#000" }}>{item.reason}</Text>
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={[styles.button, styles.acceptButton]}
-                onPress={() => handleUpdateStatus(item.id, "Atendida",item.patientEmail)}
+                onPress={() => handleUpdateStatus(item.id, "Atendida", item.patientEmail)}
               >
                 <Text style={styles.buttonText}>Aceptar</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
                 style={[styles.button, styles.rejectButton]}
-                onPress={() => handleUpdateStatus(item.id, "Rechazada",item.patientEmail)}
+                onPress={() => handleUpdateStatus(item.id, "Rechazada", item.patientEmail)}
               >
                 <Text style={styles.buttonText}>Rechazar</Text>
               </TouchableOpacity>
@@ -137,7 +164,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#f5f5f5",
   },
   loadingContainer: {
     flex: 1,
@@ -159,7 +185,6 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 15,
     borderRadius: 8,
-    backgroundColor: "#fff",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,

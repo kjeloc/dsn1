@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   useColorScheme,
   Alert,
+  FlatList,
 } from "react-native";
 import { db } from "../../config/firebaseConfig";
 import {
@@ -17,12 +18,14 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { UserAdmin } from "../utils/types";
+import { useRouter } from "expo-router";
 
 const MenuAdmin: React.FC = () => {
   const [Users, setUsers] = useState<UserAdmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [filteredUsers, setFilteredUsers] = useState<UserAdmin[]>([]);
   const colorScheme = useColorScheme(); // Detectar el esquema de color del dispositivo
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -83,6 +86,26 @@ const MenuAdmin: React.FC = () => {
     }
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      "Cerrar Sesión",
+      "¿Estás seguro de que deseas cerrar sesión?",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Aceptar",
+          onPress: () => {
+            // Lógica para cerrar sesión (por ejemplo, limpiar tokens o navegar al inicio)
+            router.push("/");
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -116,6 +139,14 @@ const MenuAdmin: React.FC = () => {
     }
   };
 
+  const buttons = [
+    { title: "Todos", role: "all", action: () => filterUsersByRole("all") },
+    { title: "Administradores", role: "Admin", action: () => filterUsersByRole("Admin") },
+    { title: "Dentistas", role: "Dentist", action: () => filterUsersByRole("Dentist") },
+    { title: "Pacientes", role: "Patient", action: () => filterUsersByRole("Patient") },
+    { title: "Cerrar Sesión", role: "logout", action: handleLogout },
+  ];
+
   return (
     <View
       style={[
@@ -123,6 +154,7 @@ const MenuAdmin: React.FC = () => {
         { backgroundColor: colorScheme === "dark" ? "#121212" : "#F9F9F9" },
       ]}
     >
+      {/* Título */}
       <Text
         style={[
           styles.title,
@@ -131,45 +163,36 @@ const MenuAdmin: React.FC = () => {
       >
         Menú de Administrador
       </Text>
-      {/* Botones de Filtro */}
-      <View style={styles.filterContainer}>
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            { backgroundColor: colorScheme === "dark" ? "#761FE0" : "#007BFF" },
-          ]}
-          onPress={() => filterUsersByRole("all")}
-        >
-          <Text style={styles.filterText}>Todos</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            { backgroundColor: colorScheme === "dark" ? "#761FE0" : "#007BFF" },
-          ]}
-          onPress={() => filterUsersByRole("Admin")}
-        >
-          <Text style={styles.filterText}>Administradores</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            { backgroundColor: colorScheme === "dark" ? "#761FE0" : "#007BFF" },
-          ]}
-          onPress={() => filterUsersByRole("Dentist")}
-        >
-          <Text style={styles.filterText}>Dentistas</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            { backgroundColor: colorScheme === "dark" ? "#761FE0" : "#007BFF" },
-          ]}
-          onPress={() => filterUsersByRole("Patient")}
-        >
-          <Text style={styles.filterText}>Pacientes</Text>
-        </TouchableOpacity>
-      </View>
+
+      {/* Lista Horizontal de Botones */}
+      <FlatList
+        data={buttons}
+        keyExtractor={(item) => item.role}
+        horizontal={true}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.buttonListContainer}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[
+              styles.buttonItem,
+              item.role === "logout"
+                ? { backgroundColor: colorScheme === "dark" ? "#FF4D4D" : "#FF4D4D" } // Color distinto para logout
+                : { backgroundColor: colorScheme === "dark" ? "#761FE0" : "#007BFF" }, // Colores normales para otros botones
+            ]}
+            onPress={item.action}
+          >
+            <Text
+              style={[
+                styles.buttonText,
+                { color: colorScheme === "dark" ? "#FFFFFF" : "#FFFFFF" },
+              ]}
+            >
+              {item.title}
+            </Text>
+          </TouchableOpacity>
+        )}
+      />
+
       {/* Lista de Usuarios */}
       <ScrollView>
         {filteredUsers.map((UserAdmin) => (
@@ -219,7 +242,6 @@ const MenuAdmin: React.FC = () => {
   );
 };
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -236,25 +258,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  filterContainer: {
+  buttonListContainer: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 15,
+    marginBottom: 20,
   },
-  filterButton: {
+  buttonItem: {
     padding: 10,
     borderRadius: 8,
+    marginHorizontal: 5,
     alignItems: "center",
     justifyContent: "center",
+    height: 50,
   },
-  filterText: {
-    color: "#FFFFFF",
+  buttonText: {
+    fontSize: 16,
     fontWeight: "bold",
-  },
-  UserState: {
-    fontSize: 14,
-    fontWeight: "bold",
-    marginTop: 8,
   },
   UserCard: {
     padding: 15,
@@ -269,21 +287,28 @@ const styles = StyleSheet.create({
   UserName: {
     fontSize: 18,
     fontWeight: "bold",
+    marginBottom: 5,
   },
   UserEmail: {
     fontSize: 14,
+    marginBottom: 5,
   },
   UserRole: {
     fontSize: 14,
     fontStyle: "italic",
-    marginTop: 5,
-  },changeStateButton: {
+    marginBottom: 5,
+  },
+  UserState: {
+    fontSize: 14,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  changeStateButton: {
     backgroundColor: "#007BFF",
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
     alignSelf: "flex-start",
-    marginTop: 8,
   },
   changeStateButtonText: {
     color: "#FFFFFF",

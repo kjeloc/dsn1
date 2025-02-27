@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Image, ImageBackground } from "react-native";
 import { db } from "../../config/firebaseConfig";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, addDoc } from "firebase/firestore";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import axios from "axios";
 import * as Location from "expo-location";
@@ -23,6 +23,20 @@ const MenuPatient: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [showPreviousAppointments, setShowPreviousAppointments] = useState(false);
   const router = useRouter();
+
+  // Función para registrar logs
+  const logAction = async (userId: string, action: string) => {
+    try {
+      await addDoc(collection(db, "logs"), {
+        userId: userId,
+        action: action,
+        timestamp: new Date(), // Fecha y hora actual
+      });
+      console.log("Log registrado correctamente:", action);
+    } catch (error) {
+      console.error("Error al registrar el log:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -155,7 +169,7 @@ const MenuPatient: React.FC = () => {
   };
 
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     Alert.alert(
       "Cerrar Sesión",
       "¿Estás seguro de que deseas cerrar sesión?",
@@ -166,9 +180,18 @@ const MenuPatient: React.FC = () => {
         },
         {
           text: "Aceptar",
-          onPress: () => {
-            // Aquí puedes implementar la lógica para cerrar sesión (por ejemplo, limpiar tokens o navegar al inicio).
-            router.replace("/");
+          onPress: async () => {
+            try {
+              // Registrar log de cierre de sesión
+              if (userId) {
+                await logAction(userId as string, "Cierre de sesión");
+              }
+
+              // Lógica para cerrar sesión
+              router.replace("/");
+            } catch (error) {
+              console.error("Error al registrar el log de cierre de sesión:", error);
+            }
           },
         },
       ]

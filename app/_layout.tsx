@@ -1,10 +1,17 @@
 import { Stack } from "expo-router";
 import { ThemeProvider } from "./ThemeContext";
+import { StatusBar } from "expo-status-bar";
+import { useColorScheme } from "react-native";
 
 export default function RootLayout() {
+  const colorScheme = useColorScheme(); 
   return (
     <ThemeProvider>
-      <Stack>
+      <StatusBar
+        style={colorScheme === "dark" ? "light" : "dark"} // Texto claro en modo oscuro, texto oscuro en modo claro
+        backgroundColor={colorScheme === "dark" ? "#121212" : "#ffffff"} // Fondo adaptado al modo
+      />
+      <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" options={{ title: "Login" }} />
         <Stack.Screen name="menuAdmin" options={{ title: "Admin" }} />
         <Stack.Screen name="menuDentist" options={{ title: "Dentista" }} />

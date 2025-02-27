@@ -11,13 +11,14 @@ import {
   Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; // Para íconos
-import { collection, getDocs, query, where, doc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, query, where, doc, updateDoc, addDoc } from "firebase/firestore";
 import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
 import dayjs from "dayjs";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAppTheme } from "../Constants/Colors"; // Importar los colores dinámicos
 import { db } from "../../config/firebaseConfig";
+import SkeletonLoader from "../Components/SkeletonLoader";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -34,6 +35,20 @@ const LoginScreen = () => {
   const router = useRouter();
   const { userId } = useLocalSearchParams();
   const theme = useAppTheme(); // Obtener el tema dinámico
+
+  // Función para registrar logs
+  const logAction = async (userId: string, action: string) => {
+    try {
+      await addDoc(collection(db, "logs"), {
+        userId: userId,
+        action: action,
+        timestamp: new Date(), // Fecha y hora actual
+      });
+      console.log("Log registrado correctamente:", action);
+    } catch (error) {
+      console.error("Error al registrar el log:", error);
+    }
+  };
 
   useEffect(() => {
     const requestNotificationPermissions = async () => {
@@ -100,24 +115,34 @@ const LoginScreen = () => {
       Alert.alert("Error", "Por favor, completa todos los campos.");
       return;
     }
+
     setIsLoading(true); // Bloquear los campos
+
     try {
       const usersRef = collection(db, "userTest");
       const q = query(usersRef, where("email", "==", email));
       const querySnapshot = await getDocs(q);
+
       if (querySnapshot.empty) {
         Alert.alert("Error", "Usuario no encontrado");
         return;
       }
+
       const userDoc = querySnapshot.docs[0];
       const userData = userDoc.data();
+
       if (userData.password !== password) {
         Alert.alert("Error", "Contraseña incorrecta");
         return;
       }
+
+      // Registrar log de inicio de sesión
+      await logAction(userDoc.id, "Inicio de sesión");
+
       await getUserLocation(userDoc.id);
       const appointmentCount = await countAppointmentsForToday(userDoc.id);
       await scheduleNotification(appointmentCount);
+
       if (userData.rol === "Admin") {
         router.replace("/Admin/menuAdmin");
       } else if (userData.rol === "Dentist") {
@@ -137,65 +162,90 @@ const LoginScreen = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Título Elegante */}
-      <Text style={[styles.title, { color: theme.text }]}>DENTAL SOCIAL NETWORK</Text>
-
-      <Image source={require("../../assets/images/salud-dental.png")} style={[styles.logo, { width: 80, height: 80 }]} />
+      {/* Título */}
+      {isLoading ? (
+        <SkeletonLoader width={250} height={40} borderRadius={8} />
+      ) : (
+        <Text style={[styles.title, { color: theme.text }]}>DENTAL SOCIAL NETWORK</Text>
+      )}
+      {/* Logo */}
+      {isLoading ? (
+        <SkeletonLoader width={80} height={80} borderRadius={40} />
+      ) : (
+        <Image source={require("../../assets/images/salud-dental.png")} style={[styles.logo, { width: 80, height: 80 }]} />
+      )}
       {/* Campo de Correo Electrónico */}
-      <TextInput
-        style={[
-          styles.input,
-          { backgroundColor: theme.card, borderColor: theme.border, color: theme.text },
-        ]}
-        placeholder="Correo electrónico"
-        placeholderTextColor={theme.secondary}
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        editable={!isLoading} // Deshabilitar cuando isLoading es true
-      />
-
+      {isLoading ? (
+        <SkeletonLoader width={100} height={50} borderRadius={8} />
+      ) : (
+        <TextInput
+          style={[
+            styles.input,
+            { backgroundColor: theme.card, borderColor: theme.border, color: theme.text },
+          ]}
+          placeholder="Correo electrónico"
+          placeholderTextColor={theme.secondary}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          editable={!isLoading} // Deshabilitar cuando isLoading es true
+        />
+      )}
       {/* Campo de Contraseña */}
-      <TextInput
-        style={[
-          styles.input,
-          { backgroundColor: theme.card, borderColor: theme.border, color: theme.text },
-        ]}
-        placeholder="Contraseña"
-        placeholderTextColor={theme.secondary}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        editable={!isLoading} // Deshabilitar cuando isLoading es true
-      />
-
+      {isLoading ? (
+        <SkeletonLoader width={100} height={50} borderRadius={8} />
+      ) : (
+        <TextInput
+          style={[
+            styles.input,
+            { backgroundColor: theme.card, borderColor: theme.border, color: theme.text },
+          ]}
+          placeholder="Contraseña"
+          placeholderTextColor={theme.secondary}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          editable={!isLoading} // Deshabilitar cuando isLoading es true
+        />
+      )}
       {/* Botón de Iniciar Sesión */}
-      <TouchableOpacity
-        style={[
-          styles.button,
-          { backgroundColor: theme.button, opacity: isLoading ? 0.5 : 1 },
-        ]}
-        onPress={handleLogin}
-        disabled={isLoading} // Deshabilitar el botón cuando isLoading es true
-      >
-        <Text style={styles.buttonText}>{isLoading ? "Iniciando..." : "Iniciar Sesión"}</Text>
-      </TouchableOpacity>
-
-      {/* Botón de Crear Cuenta */}
-      <TouchableOpacity
-        style={styles.createAccountButton}
-        onPress={() => router.push("/Auth/registerUser")} // Navegar a la pantalla de registro
-      >
-        <Text style={styles.createAccountButtonText}>Crear Cuenta para Paciente</Text>
-      </TouchableOpacity>
-      {/* Botón de Crear Cuenta */}
-      <TouchableOpacity
-        style={styles.createAccountButton}
-        onPress={() => router.push("/Auth/registerDentist")} // Navegar a la pantalla de registro
-      >
-        <Text style={styles.createAccountButtonText}>Crear Cuenta para Dentista</Text>
-      </TouchableOpacity>
+      {isLoading ? (
+        <SkeletonLoader width={100} height={50} borderRadius={8} />
+      ) : (
+        <TouchableOpacity
+          style={[
+            styles.button,
+            { backgroundColor: theme.button, opacity: isLoading ? 0.5 : 1 },
+          ]}
+          onPress={handleLogin}
+          disabled={isLoading} // Deshabilitar el botón cuando isLoading es true
+        >
+          <Text style={styles.buttonText}>{isLoading ? "Iniciando..." : "Iniciar Sesión"}</Text>
+        </TouchableOpacity>
+      )}
+      {/* Botón de Crear Cuenta para Paciente */}
+      {isLoading ? (
+        <SkeletonLoader width={100} height={50} borderRadius={8} />
+      ) : (
+        <TouchableOpacity
+          style={styles.createAccountButton}
+          onPress={() => router.push("/Auth/registerUser")} // Navegar a la pantalla de registro
+        >
+          <Text style={styles.createAccountButtonText}>Crear Cuenta para Paciente</Text>
+        </TouchableOpacity>
+      )}
+      {/* Botón de Crear Cuenta para Dentista */}
+      {isLoading ? (
+        <SkeletonLoader width={100} height={50} borderRadius={8} />
+      ) : (
+        <TouchableOpacity
+          style={styles.createAccountButton}
+          onPress={() => router.push("/Auth/registerDentist")} // Navegar a la pantalla de registro
+        >
+          <Text style={styles.createAccountButtonText}>Crear Cuenta para Dentista</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };

@@ -8,11 +8,25 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  useColorScheme,
 } from "react-native";
 import { doc, getDoc, addDoc, collection } from "firebase/firestore";
 import { useLocalSearchParams } from "expo-router";
 import { db } from "../../../config/firebaseConfig";
 import { PatientData } from "../../utils/types";
+
+const logAction = async (userId: string, action: string) => {
+  try {
+    await addDoc(collection(db, "logs"), {
+      userId: userId,
+      action: action,
+      timestamp: new Date(), // Fecha y hora actual
+    });
+    console.log("Log registrado correctamente:", action);
+  } catch (error) {
+    console.error("Error al registrar el log:", error);
+  }
+};
 
 const RequestAppointment: React.FC = () => {
   const { userId } = useLocalSearchParams();
@@ -21,6 +35,7 @@ const RequestAppointment: React.FC = () => {
   const [selectedDentist, setSelectedDentist] = useState<string>("");
   const [reason, setReason] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
+  const colorScheme = useColorScheme(); // Detectar el esquema de color del dispositivo
 
   useEffect(() => {
     const fetchPatientData = async () => {
@@ -48,9 +63,9 @@ const RequestAppointment: React.FC = () => {
   const handleRequestAppointment = async () => {
     if (!patientData || !selectedDentist || !reason.trim()) {
       Alert.alert("Error", "Por favor completa todos los campos.");
+      await logAction(userId as string, "Solicitud de Cita");
       return;
     }
-
     setSubmitting(true);
     try {
       const currentDate = new Date().toISOString().split("T")[0]; // Formato yyyy-mm-dd
@@ -61,10 +76,8 @@ const RequestAppointment: React.FC = () => {
         reason: reason.trim(),
         status: "En espera",
       };
-
       // Guardar en Firebase
       await addDoc(collection(db, "Appointment_request"), appointmentData);
-
       Alert.alert("Éxito", "Tu solicitud de cita ha sido enviada.");
       setReason(""); // Limpiar el campo de motivo
     } catch (error) {
@@ -77,26 +90,26 @@ const RequestAppointment: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
+      <View style={[styles.container, { backgroundColor: colorScheme === "dark" ? "#121212" : "#fff" }]}>
+        <ActivityIndicator size="large" color={colorScheme === "dark" ? "#fff" : "#0000ff"} />
       </View>
     );
   }
 
   if (!patientData) {
     return (
-      <View style={styles.container}>
-        <Text>No se encontraron datos del paciente.</Text>
+      <View style={[styles.container, { backgroundColor: colorScheme === "dark" ? "#121212" : "#f5f5f5" }]}>
+        <Text style={{ color: colorScheme === "dark" ? "#fff" : "#000" }}>No se encontraron datos del paciente.</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Solicitar Cita</Text>
+    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colorScheme === "dark" ? "#121212" : "#f5f5f5" }]}>
+      <Text style={[styles.title, { color: colorScheme === "dark" ? "#fff" : "#000" }]}>Solicitar Cita</Text>
 
       {/* Lista de Dentistas */}
-      <Text style={styles.label}>Selecciona un dentista:</Text>
+      <Text style={[styles.label, { color: colorScheme === "dark" ? "#fff" : "#000" }]}>Selecciona un dentista:</Text>
       {patientData.dentists && patientData.dentists.length > 0 ? (
         patientData.dentists.map((dentistEmail, index) => (
           <TouchableOpacity
@@ -104,21 +117,33 @@ const RequestAppointment: React.FC = () => {
             style={[
               styles.dentistButton,
               selectedDentist === dentistEmail && styles.selectedDentistButton,
+              {
+                borderColor: colorScheme === "dark" ? "#444" : "#ccc",
+                backgroundColor: selectedDentist === dentistEmail ? (colorScheme === "dark" ? "#761FE0" : "#007bff") : "transparent",
+              },
             ]}
             onPress={() => setSelectedDentist(dentistEmail)}
           >
-            <Text>{dentistEmail}</Text>
+            <Text style={{ color: colorScheme === "dark" ? "#fff" : "#000" }}>{dentistEmail}</Text>
           </TouchableOpacity>
         ))
       ) : (
-        <Text>No hay dentistas disponibles.</Text>
+        <Text style={{ color: colorScheme === "dark" ? "#fff" : "#000" }}>No hay dentistas disponibles.</Text>
       )}
 
       {/* Motivo de la Cita */}
-      <Text style={styles.label}>Motivo de la cita:</Text>
+      <Text style={[styles.label, { color: colorScheme === "dark" ? "#fff" : "#000" }]}>Motivo de la cita:</Text>
       <TextInput
-        style={styles.input}
+        style={[
+          styles.input,
+          {
+            borderColor: colorScheme === "dark" ? "#444" : "#ccc",
+            backgroundColor: colorScheme === "dark" ? "#1e1e1e" : "#fff",
+            color: colorScheme === "dark" ? "#fff" : "#000",
+          },
+        ]}
         placeholder="Escribe el motivo de tu cita"
+        placeholderTextColor={colorScheme === "dark" ? "#aaa" : "#888"}
         value={reason}
         onChangeText={setReason}
         multiline
@@ -126,7 +151,12 @@ const RequestAppointment: React.FC = () => {
 
       {/* Botón de Envío */}
       <TouchableOpacity
-        style={styles.submitButton}
+        style={[
+          styles.submitButton,
+          {
+            backgroundColor: colorScheme === "dark" ? "#761FE0" : "#007bff",
+          },
+        ]}
         onPress={handleRequestAppointment}
         disabled={submitting}
       >
@@ -144,7 +174,6 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: 20,
-    backgroundColor: "#f5f5f5",
   },
   title: {
     fontSize: 24,
@@ -161,7 +190,6 @@ const styles = StyleSheet.create({
     padding: 10,
     marginVertical: 5,
     borderWidth: 1,
-    borderColor: "#ccc",
     borderRadius: 5,
   },
   selectedDentistButton: {
@@ -169,7 +197,6 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 100,
-    borderColor: "#ccc",
     borderWidth: 1,
     borderRadius: 5,
     padding: 10,
@@ -177,7 +204,6 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
   submitButton: {
-    backgroundColor: "#007bff",
     padding: 15,
     borderRadius: 5,
     alignItems: "center",
