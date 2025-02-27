@@ -55,6 +55,7 @@ export default function RootLayout() {
         <Stack.Screen name="ViewAppointmentDentist" options={{ title: "Detalles de la Cita" }} />
         <Stack.Screen name="ViewAppointmentPatient" options={{ title: "Detalles de la Cita" }} />
         <Stack.Screen name="QRScannerScreen" options={{ title: "Qr Scan" }} />
+        <Stack.Screen name="QRScannerScreen2" options={{ title: "Qr Scan" }} />
         <Stack.Screen name="registerUser" options={{ title: "Registro de Usuario" }} />
         <Stack.Screen name="registerDentist" options={{ title: "Registro de Dentista" }} />
         <Stack.Screen name="ProfileDentist" options={{ title: "Perfil del Dentista" }} />

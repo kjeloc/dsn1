@@ -331,7 +331,7 @@ const MenuDentist: React.FC = () => {
       label: "Escanear QR",
       onPress: () =>
         router.push({
-          pathname: "/Dentist/QRScannerScreen",
+          pathname: "/Dentist/QRScannerScreen2",
           params: { appointments: JSON.stringify(appointments) },
         }),
     },
