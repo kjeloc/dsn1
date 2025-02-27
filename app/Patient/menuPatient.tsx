@@ -34,7 +34,7 @@ const MenuPatient: React.FC = () => {
 
     const unsubscribe = onSnapshot(appointmentsRef, async (querySnapshot) => {
       querySnapshot.docChanges().forEach(async (change) => {
-        if (change.type === "added") {
+        if (change.type === "added" || change.type === "modified") {
           const appointmentData = change.doc.data();
           const appointmentId = appointmentData.id;
           if (!appointmentData.notified) {
